@@ -1,0 +1,139 @@
+# Date de génération de cet exemple : 2025-06-08
+# Login utilisateur : c-andriam
+version: '3.8'
+
+services:
+  # --- Service MariaDB ---
+  mariadb:
+    build:
+      context: ./requirements/mariadb
+      dockerfile: Dockerfile
+      args:
+        ALPINE_VERSION: "3.19" # Adaptez si une autre version d'Alpine est plus appropriée
+    image: mariadb # Nom de l'image = nom du service
+    container_name: mariadb_c-andriam
+    restart: unless-stopped
+    networks:
+      - inception_network_c-andriam
+    volumes:
+      - db_data:/var/lib/mysql
+    env_file:
+      - .env # Pour MYSQL_DATABASE, MYSQL_USER
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mariadb_root_password
+      MYSQL_PASSWORD_FILE: /run/secrets/mariadb_user_password
+    secrets:
+      - mariadb_root_password
+      - mariadb_user_password
+    expose:
+      - "3306"
+
+  # --- Service WordPress ---
+  wordpress:
+    build:
+      context: ./requirements/wordpress
+      dockerfile: Dockerfile
+      args:
+        ALPINE_VERSION: "3.19" # Doit correspondre à celle de MariaDB/Nginx pour la cohérence
+        WP_VERSION: "6.5.4"    # VÉRIFIEZ L'AVANT-DERNIÈRE VERSION STABLE DE WORDPRESS
+        PHP_VERSION: "php82"   # VÉRIFIEZ LA DISPONIBILITÉ DES PAQUETS PHP POUR ALPINE ET COMPATIBILITÉ WP
+        WP_SHA256_CHECKSUM: "METTEZ_ICI_LE_VRAI_CHECKSUM_SHA256_POUR_WORDPRESS_${WP_VERSION}" # TRÈS IMPORTANT
+    image: wordpress # Nom de l'image = nom du service
+    container_name: wordpress_c-andriam
+    restart: unless-stopped
+    networks:
+      - inception_network_c-andriam
+    volumes:
+      - wp_files:/var/www/html
+    env_file:
+      - .env # Pour toutes les variables WP_*, MYSQL_*, AUTH_KEY, etc.
+    environment:
+      DB_HOST: mariadb # Nom du service MariaDB
+      WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
+      WORDPRESS_DB_USER: ${MYSQL_USER}
+      WORDPRESS_DB_PASSWORD_FILE: /run/secrets/mariadb_user_password
+
+      WORDPRESS_TABLE_PREFIX: wp_ # Peut être omis si vous voulez le préfixe par défaut
+      WORDPRESS_ADMIN_USER: ${WP_ADMIN_USER}
+      WORDPRESS_ADMIN_EMAIL: ${WP_ADMIN_EMAIL}
+      WORDPRESS_ADMIN_PASSWORD_FILE: /run/secrets/wordpress_admin_password
+      WORDPRESS_TITLE: "Site Inception de c-andriam" # Ou ${DOMAIN_NAME}
+
+      # WordPress lira directement ces variables d'environnement si elles sont définies
+      # (elles sont chargées via env_file depuis .env)
+      # WORDPRESS_URL: ${WORDPRESS_URL} # Assurez-vous que WORDPRESS_URL est dans .env
+      # WORDPRESS_HOME: ${WORDPRESS_HOME} # Assurez-vous que WORDPRESS_HOME est dans .env
+      # WORDPRESS_SITEURL: ${WORDPRESS_SITEURL} # Assurez-vous que WORDPRESS_SITEURL est dans .env
+      # Les clés de sécurité sont aussi chargées via env_file
+      # WORDPRESS_AUTH_KEY: ${AUTH_KEY}
+      # WORDPRESS_SECURE_AUTH_KEY: ${SECURE_AUTH_KEY}
+      # etc.
+
+      # Configuration supplémentaire pour wp-config.php si nécessaire
+      # (Si les variables WORDPRESS_HOME/SITEURL ne sont pas prises nativement)
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_HOME', '${WORDPRESS_HOME}');
+        define('WP_SITEURL', '${WORDPRESS_SITEURL}');
+        define('FS_METHOD', 'direct'); # Peut aider pour les mises à jour de thèmes/plugins
+    secrets:
+      - mariadb_user_password # Pour la connexion à la BDD
+      - wordpress_admin_password # Pour la création de l'admin WP (si script ou image le supporte)
+    depends_on:
+      mariadb:
+        condition: service_started
+    expose:
+      - "9000" # Port de PHP-FPM
+
+  # --- Service Nginx ---
+  nginx:
+    build:
+      context: ./requirements/nginx
+      dockerfile: Dockerfile
+      args:
+        ALPINE_VERSION: "3.19"
+        DOMAIN_NAME: ${DOMAIN_NAME} # Vient de .env
+    image: nginx # Nom de l'image = nom du service
+    container_name: nginx_c-andriam
+    restart: unless-stopped
+    networks:
+      - inception_network_c-andriam
+    ports:
+      - "443:443" # Port HTTPS exposé sur l'hôte
+    volumes:
+      # Monte les fichiers WordPress en lecture seule pour Nginx
+      - wp_files:/var/www/html:ro
+    depends_on:
+      - wordpress
+
+# Définition des volumes nommés pour la persistance des données
+volumes:
+  db_data: # Volume pour les données de MariaDB
+    driver: local
+    driver_opts:
+      type: none
+      device: /home/c-andriam/data/mariadb # Chemin sur l'hôte pour les données MariaDB
+      o: bind
+  wp_files: # Volume pour les fichiers de WordPress
+    driver: local
+    driver_opts:
+      type: none
+      device: /home/c-andriam/data/wordpress # Chemin sur l'hôte pour les fichiers WordPress
+      o: bind
+
+# Définition du réseau personnalisé pour la communication entre conteneurs
+networks:
+  inception_network_c-andriam:
+    driver: bridge
+    name: inception_network_c-andriam_net # Nom explicite du réseau Docker créé
+
+# Déclaration globale des secrets, pointant vers les fichiers dans le dossier secrets/
+# Les chemins sont relatifs à l'emplacement de ce fichier docker-compose.yml (qui est dans srcs/)
+secrets:
+  mariadb_root_password:
+    file: ./../secrets/mariadb_root_password.txt
+  mariadb_user_password:
+    file: ./../secrets/mariadb_user_password.txt
+  wordpress_admin_password:
+    file: ./../secrets/wordpress_admin_password.txt
