@@ -1,0 +1,61 @@
+# --- Étape 1: Définir l'image de base ---
+ARG ALPINE_VERSION="3.19"
+FROM alpine:${ALPINE_VERSION}
+
+# --- Étape 2: Définir les variables d'environnement et ARGs ---
+# ARG pour le nom de domaine, passé par docker-compose.yml depuis .env
+# Ce nom de domaine est crucial pour la génération du certificat SSL.
+ARG DOMAIN_NAME="c-andriam.42.fr" # Valeur par défaut si non fournie
+
+# --- Étape 3: Installer les paquets nécessaires ---
+# Nginx pour le serveur web, OpenSSL pour générer le certificat SSL.
+RUN apk update && \
+    apk add --no-cache \
+        nginx \
+        openssl \
+        bash # Si vous avez un script d'entrée complexe (pas nécessaire ici)
+
+# --- Étape 4: Générer le certificat SSL auto-signé ---
+# Créer les répertoires pour les certificats.
+RUN mkdir -p /etc/nginx/ssl/private /etc/nginx/ssl/certs
+
+# Générer une clé privée RSA de 2048 bits et un certificat X.509 auto-signé.
+# -nodes : Ne pas chiffrer la clé privée.
+# -days 365 : Validité du certificat (1 an).
+# -newkey rsa:2048 : Créer une nouvelle clé RSA.
+# -keyout : Chemin pour la clé privée.
+# -out : Chemin pour le certificat.
+# -subj : Informations du sujet du certificat. Le CN (Common Name) DOIT correspondre à votre DOMAIN_NAME.
+#         Le sujet demande que le nom de domaine soit login.42.fr
+RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout /etc/nginx/ssl/private/nginx-selfsigned.key \
+    -out /etc/nginx/ssl/certs/nginx-selfsigned.crt \
+    -subj "/C=FR/ST=IDF/L=Paris/O=42School/OU=${DOMAIN_NAME}/CN=${DOMAIN_NAME}"
+
+# Optionnel mais recommandé pour une meilleure sécurité (Forward Secrecy):
+# Générer des paramètres Diffie-Hellman. Cela peut prendre du temps lors du build.
+# RUN openssl dhparam -out /etc/nginx/ssl/dhparam.pem 2048
+
+# --- Étape 5: Copier la configuration Nginx ---
+# Copier votre fichier de configuration Nginx personnalisé.
+# Il devrait remplacer la configuration par défaut ou être placé dans conf.d.
+# Ce fichier doit être dans srcs/requirements/nginx/conf/
+COPY ./conf/nginx.conf /etc/nginx/nginx.conf
+# Si vous utilisez un fichier pour un virtual host spécifique (plus courant) :
+# COPY ./conf/default.conf /etc/nginx/conf.d/default.conf
+# Assurez-vous que votre nginx.conf principal inclut conf.d/*.conf.
+
+# --- Étape 6: Définir les permissions (si nécessaire) ---
+# Nginx tourne souvent en tant qu'utilisateur 'nginx'.
+# Vérifiez que cet utilisateur a les droits de lecture sur les certificats et les fichiers de conf.
+# Les paquets Alpine configurent généralement cela correctement.
+
+# --- Étape 7: Exposer le port ---
+# Exposer le port HTTPS (443). Le sujet demande que Nginx soit le seul point d'entrée sur ce port.
+EXPOSE 443
+
+# --- Étape 8: Définir la commande par défaut ---
+# Démarrer Nginx en avant-plan.
+# '-g "daemon off;"' empêche Nginx de se mettre en arrière-plan,
+# ce qui est nécessaire pour que Docker puisse gérer le processus.
+CMD ["nginx", "-g", "daemon off;"]

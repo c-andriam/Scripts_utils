@@ -1,0 +1,70 @@
+# --- Étape 1: Définir l'image de base ---
+# Utiliser une version spécifique d'Alpine (avant-dernière stable recommandée par le sujet).
+# ARG permet de passer une variable au moment du build (depuis docker-compose.yml).
+ARG ALPINE_VERSION="3.19"
+FROM alpine:${ALPINE_VERSION}
+
+# --- Étape 2: Définir les variables d'environnement par défaut (peuvent être surchargées) ---
+# Ces valeurs sont utilisées par le script d'initialisation si non fournies par docker-compose.
+ENV MYSQL_DATABASE=wordpress_db_default
+ENV MYSQL_USER=wp_user_default
+# Les mots de passe réels seront fournis par Docker Secrets via des variables _FILE.
+
+# --- Étape 3: Installer les paquets nécessaires ---
+# Mettre à jour le gestionnaire de paquets et installer MariaDB serveur, client, et bash (pour le script).
+# --no-cache réduit la taille de l'image en ne gardant pas le cache apk.
+RUN apk update && \
+    apk add --no-cache \
+        mariadb \
+        mariadb-client \
+        bash # Nécessaire si votre script init_db.sh utilise des fonctionnalités bash
+
+# --- Étape 4: Copier les fichiers de configuration et les scripts ---
+# Copier le fichier de configuration personnalisé de MariaDB.
+# Ce fichier doit être dans srcs/requirements/mariadb/conf/
+COPY ./conf/my.cnf /etc/mysql/my.cnf
+# Assurez-vous que le répertoire cible existe et que les permissions sont correctes.
+# Parfois, my.cnf va dans /etc/mysql/conf.d/my.cnf ou /etc/my.cnf.d/mariadb-server.cnf
+# Vérifiez la documentation de MariaDB pour Alpine si nécessaire.
+
+# Copier le script d'initialisation de la base de données.
+# Ce script doit être dans srcs/requirements/mariadb/tools/
+COPY ./tools/init_db.sh /usr/local/bin/init_db.sh
+# Rendre le script exécutable.
+RUN chmod +x /usr/local/bin/init_db.sh
+
+# --- Étape 5: Préparer le répertoire de données ---
+# Créer le répertoire où MariaDB stockera ses données.
+# L'utilisateur 'mysql' est généralement créé lors de l'installation de MariaDB.
+RUN mkdir -p /var/lib/mysql && \
+    chown -R mysql:mysql /var/lib/mysql && \
+    # Le script init_db.sh s'occupera de mariadb-install-db
+    # Si vous ne le faites pas dans le script, vous pouvez le faire ici :
+    # mariadb-install-db --user=mysql --datadir=/var/lib/mysql --skip-test-db
+    # Cependant, il est préférable de le gérer dans le script d'entrée pour
+    # qu'il ne s'exécute qu'une seule fois si le volume est vide.
+    # Assurer que le répertoire pour le socket existe (si différent de /tmp)
+    mkdir -p /run/mysqld && \
+    chown -R mysql:mysql /run/mysqld
+
+# --- Étape 6: Exposer le port ---
+# Exposer le port standard de MariaDB. Ce port ne sera accessible
+# qu'aux autres conteneurs sur le même réseau Docker, pas à l'hôte (sauf si publié dans docker-compose).
+EXPOSE 3306
+
+# --- Étape 7: Définir le point d'entrée et la commande par défaut ---
+# L'ENTRYPOINT est le script qui sera exécuté au démarrage du conteneur.
+# Notre script init_db.sh se chargera d'initialiser la base si besoin,
+# puis de lancer le serveur MariaDB.
+ENTRYPOINT ["/usr/local/bin/init_db.sh"]
+
+# La CMD est la commande par défaut qui sera passée à l'ENTRYPOINT.
+# Notre script init_db.sh utilisera "$@" pour exécuter cette commande.
+# Cela démarre MariaDB en avant-plan (console) pour que Docker puisse le gérer.
+# --user=mysql : S'assurer que le serveur tourne en tant qu'utilisateur mysql.
+# --console : Loguer sur la console (stdout/stderr).
+# --skip-name-resolve : Optimisation pour éviter les lookups DNS.
+# --skip-networking=0 : S'assurer que le networking est activé (malgré le nom).
+#                       Il est parfois nécessaire de forcer l'écoute sur toutes les interfaces.
+#                       Votre my.cnf avec bind-address = 0.0.0.0 s'en charge aussi.
+CMD ["mariadbd", "--user=mysql", "--console", "--skip-name-resolve"]
