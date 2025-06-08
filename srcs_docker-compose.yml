@@ -1,0 +1,164 @@
+# Version de la syntaxe du fichier Docker Compose.
+# '3.8' est une version courante et stable. Vous pouvez utiliser des versions plus récentes si disponibles.
+version: '3.8'
+
+# Définition des services (vos conteneurs : MariaDB, WordPress, Nginx)
+services:
+  # --- Service MariaDB (Base de Données) ---
+  mariadb:
+    # 'build' indique à Docker Compose comment construire l'image pour ce service.
+    build:
+      # 'context' est le chemin vers le répertoire contenant le Dockerfile et les fichiers associés.
+      context: ./requirements/mariadb
+      # 'dockerfile' spécifie le nom du Dockerfile à utiliser (si différent de 'Dockerfile').
+      dockerfile: Dockerfile
+      # 'args' vous permet de passer des variables de construction au Dockerfile.
+      # Utile pour spécifier des versions ou des configurations au moment du build.
+      args:
+        ALPINE_VERSION: 3.19 # Exemple, adaptez à l'avant-dernière version stable d'Alpine
+                             # Cette variable doit être déclarée avec ARG dans le Dockerfile de MariaDB.
+    # 'image' définit le nom de l'image qui sera construite ou utilisée.
+    # Le sujet demande que le nom de l'image soit le même que le nom du service.
+    image: mariadb
+    # 'container_name' donne un nom spécifique à l'instance du conteneur.
+    # Utile pour des références directes, mais Docker Compose gère aussi les noms automatiquement.
+    # Le nom du projet (nom du dossier parent) sera préfixé, ex: inception-mariadb-1
+    # Pour un nom fixe, utilisez container_name.
+    container_name: mariadb_c-andriam # Remplacez c-andriam par votre login
+    # 'restart' définit la politique de redémarrage du conteneur.
+    # 'unless-stopped': redémarre le conteneur sauf s'il a été explicitement arrêté.
+    restart: unless-stopped
+    # 'networks' connecte ce service aux réseaux Docker spécifiés.
+    networks:
+      - inception_network_c-andriam # Doit correspondre au nom défini dans la section 'networks' plus bas.
+    # 'volumes' monte des volumes dans le conteneur.
+    volumes:
+      # Monte le volume nommé 'db_data' dans le répertoire /var/lib/mysql du conteneur.
+      # C'est là que MariaDB stocke ses données. Cela rend les données persistantes.
+      - db_data:/var/lib/mysql
+    # 'env_file' charge les variables d'environnement depuis un fichier.
+    # Ici, il charge les variables définies dans srcs/.env.
+    env_file:
+      - .env # Le chemin est relatif au fichier docker-compose.yml
+    # 'environment' permet de définir ou de surcharger des variables d'environnement.
+    # Ici, nous nous assurons que les variables de .env sont bien utilisées.
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE} # ${VARIABLE} lit la valeur depuis .env ou l'environnement du shell
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    # 'expose' liste les ports que le conteneur expose aux autres services sur le même réseau,
+    # mais ne les publie pas sur la machine hôte.
+    expose:
+      - "3306" # Port standard de MariaDB
+
+  # --- Service WordPress (Application Web) ---
+  wordpress:
+    build:
+      context: ./requirements/wordpress
+      dockerfile: Dockerfile
+      args:
+        ALPINE_VERSION: 3.19 # Conservez la même version d'Alpine pour la cohérence
+        WP_VERSION: 6.5.4    # Avant-dernière version STABLE de WordPress (vérifiez et adaptez)
+        PHP_VERSION: php82   # Version de PHP compatible (ex: php81, php82, php83)
+                             # Assurez-vous que les paquets existent pour votre version d'Alpine.
+        WP_SHA256_CHECKSUM: "checksum_de_votre_version_wp" # OBTENEZ LE VRAI CHECKSUM
+    image: wordpress # Nom de l'image = nom du service
+    container_name: wordpress_c-andriam # Remplacez c-andriam
+    restart: unless-stopped
+    networks:
+      - inception_network_c-andriam
+    volumes:
+      # Monte le volume nommé 'wp_files' dans /var/www/html du conteneur.
+      # Contient les fichiers de WordPress (code, thèmes, plugins, uploads).
+      - wp_files:/var/www/html
+    env_file:
+      - .env
+    environment:
+      # DB_HOST doit être le nom du service MariaDB tel que défini dans ce fichier.
+      DB_HOST: mariadb
+      # Les autres variables comme MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD,
+      # et les clés de sécurité WordPress (AUTH_KEY, etc.) sont chargées depuis .env.
+      # Assurez-vous qu'elles sont bien dans votre .env.
+      WORDPRESS_DB_NAME: ${MYSQL_DATABASE} # WordPress utilise ces noms de variables
+      WORDPRESS_DB_USER: ${MYSQL_USER}
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
+      # Variables pour les clés de sécurité (WordPress les lira directement si définies)
+      WORDPRESS_AUTH_KEY: ${AUTH_KEY}
+      WORDPRESS_SECURE_AUTH_KEY: ${SECURE_AUTH_KEY}
+      WORDPRESS_LOGGED_IN_KEY: ${LOGGED_IN_KEY}
+      WORDPRESS_NONCE_KEY: ${NONCE_KEY}
+      WORDPRESS_AUTH_SALT: ${AUTH_SALT}
+      WORDPRESS_SECURE_AUTH_SALT: ${SECURE_AUTH_SALT}
+      WORDPRESS_LOGGED_IN_SALT: ${LOGGED_IN_SALT}
+      WORDPRESS_NONCE_SALT: ${NONCE_SALT}
+    # 'depends_on' définit les dépendances entre services.
+    # WordPress dépend de MariaDB. Docker Compose démarrera MariaDB avant WordPress.
+    depends_on:
+      mariadb:
+        # 'condition: service_started' attend que le conteneur mariadb soit démarré.
+        # Pour une meilleure robustesse, 'service_healthy' est préférable si vous
+        # implémentez un 'healthcheck' pour MariaDB.
+        condition: service_started
+    expose:
+      - "9000" # Port sur lequel PHP-FPM écoute (Nginx s'y connectera)
+
+  # --- Service Nginx (Serveur Web / Reverse Proxy) ---
+  nginx:
+    build:
+      context: ./requirements/nginx
+      dockerfile: Dockerfile
+      args:
+        ALPINE_VERSION: 3.19
+        # Passe le nom de domaine au Dockerfile de Nginx pour la génération du certificat SSL.
+        DOMAIN_NAME: ${DOMAIN_NAME} # Chargé depuis .env
+    image: nginx # Nom de l'image = nom du service
+    container_name: nginx_c-andriam # Remplacez c-andriam
+    restart: unless-stopped
+    networks:
+      - inception_network_c-andriam
+    # 'ports' publie les ports du conteneur sur la machine hôte.
+    # Format: "PORT_HOTE:PORT_CONTENEUR"
+    # Ici, le port 443 (HTTPS) du conteneur Nginx est mappé au port 443 de la machine hôte (votre VM).
+    # C'est ce qui rendra votre site accessible via https://votredomaine.42.fr
+    ports:
+      - "443:443"
+    volumes:
+      # Monte les fichiers WordPress en lecture seule (':ro') dans Nginx.
+      # Nginx en a besoin pour servir les fichiers statiques (images, CSS, JS).
+      # Les requêtes PHP seront transmises au service WordPress (PHP-FPM).
+      - wp_files:/var/www/html:ro
+    depends_on:
+      - wordpress # Nginx dépend de WordPress (PHP-FPM) pour fonctionner.
+
+# Définition des volumes nommés (pour la persistance des données)
+volumes:
+  # Volume pour les données de MariaDB.
+  db_data:
+    driver: local # Pilote de volume par défaut.
+    driver_opts:
+      type: none # Pas de type de système de fichiers spécifique à forcer par Docker.
+      # 'device' est le chemin sur la machine HÔTE où les données seront stockées.
+      # Conforme à l'exigence du sujet: /home/login/data/nom_service
+      device: /home/c-andriam/data/mariadb # REMPLACEZ c-andriam par votre login.
+      o: bind # Option de montage, 'bind' monte le répertoire hôte dans le volume.
+              # Cela crée un "bind mount" via une définition de volume nommé.
+
+  # Volume pour les fichiers de WordPress.
+  wp_files:
+    driver: local
+    driver_opts:
+      type: none
+      device: /home/c-andriam/data/wordpress # REMPLACEZ c-andriam par votre login.
+      o: bind
+
+# Définition des réseaux personnalisés
+networks:
+  # Crée un réseau de type 'bridge' nommé 'inception_network_c-andriam'.
+  # Les services attachés à ce réseau peuvent communiquer entre eux en utilisant leurs noms de service.
+  # C'est plus sécurisé et plus flexible que le réseau par défaut.
+  inception_network_c-andriam: # J'ai ajouté votre login pour un nom unique si plusieurs projets tournent
+    driver: bridge
+    # Vous pouvez aussi donner un nom explicite au réseau Docker lui-même,
+    # sinon il sera préfixé par le nom du projet.
+    name: inception_network_c-andriam_net # Nom réel du réseau Docker
