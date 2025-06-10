@@ -96,4 +96,20 @@ Un **Conteneur Docker** est comme :
 *   **C'est vivant et dynamique :** Le gâteau existe, il a une forme, il peut être chaud ou froid. Un conteneur est un processus qui s'exécute sur votre ordinateur. Il a un état (démarré, arrêté).
 *   **Créé à partir d'une Image :** Vous ne pouvez pas avoir de gâteau sans recette ni moule. Vous ne pouvez pas avoir de conteneur sans image. Le conteneur est une **instance** d'une image.
 *   **Isolé :** Si vous faites tomber un gâteau, cela n'affecte pas les autres gâteaux que vous pourriez faire avec la même recette et le même moule. Les conteneurs sont isolés les uns des autres et du système hôte. Ce qui se passe à l'intérieur d'un conteneur reste à l'intérieur (sauf configuration spécifique).
-*   **Peut être multiple :** Avec la même recette et le même moule, vous pouvez faire plusieurs gâteaux identiques. De la même manière, à partir d'**
+*   **Peut être multiple :** Avec la même recette et le même moule, vous pouvez faire plusieurs gâteaux identiques. De la même manière, à partir d'**une seule image, vous pouvez créer et exécuter plusieurs conteneurs identiques ou légèrement modifiés.** Chaque gâteau (conteneur) est distinct, même s'ils partagent la même origine (recette/image).
+*   **Éphémère (par défaut) :** Si vous mangez le gâteau, il disparaît. Si vous jetez le gâteau, il disparaît. De même, si vous supprimez un conteneur, toutes les modifications que vous auriez pu faire *directement à l'intérieur* de ce gâteau (par exemple, ajouter un glaçage non prévu dans la recette initiale, après cuisson) sont perdues. Pour que des données persistent (comme si vous mettiez le gâteau dans une boîte pour le conserver), Docker utilise un mécanisme appelé **volumes**.
+
+**En résumé pour le Conteneur :** C'est l'**"action de faire"** et le **"résultat concret"**. C'est l'application qui *tourne*.
+
+## Comparaison Finale : Image vs Conteneur (avec l'analogie du gâteau)
+
+| Caractéristique        | Image Docker (Recette + Moule)                     | Conteneur Docker (Gâteau Cuit)                       |
+| :--------------------- | :------------------------------------------------- | :--------------------------------------------------- |
+| **État**               | Statique, figée, en lecture seule                  | Dynamique, en cours d'exécution (ou arrêté)          |
+| **Rôle**               | Modèle, plan, "comment faire"                      | Instance du modèle, "ce qui est fait et fonctionne" |
+| **Base de création**   | `Dockerfile` (la recette écrite) ou téléchargement | Une Image Docker                                     |
+| **Interaction**        | On la construit, la stocke, la partage             | On le démarre, l'arrête, le supprime, on interagit avec lui |
+| **Nombre**             | Une image peut servir à faire plusieurs gâteaux    | Plusieurs gâteaux peuvent être faits depuis une image |
+| **Persistance des modifs** | L'image ne change pas. Pour modifier, nouvelle image. | Les modifs internes au conteneur sont perdues à sa suppression (sauf si "boîte de conservation" / volume). |
+
+---
