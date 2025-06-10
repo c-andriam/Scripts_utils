@@ -64,3 +64,36 @@ Un **Conteneur Docker** est une **instance en cours d'exécution d'une image Doc
 Cette distinction entre image et conteneur est absolument cruciale pour comprendre Docker. Prenez le temps de bien l'assimiler.
 
 Est-ce que cette explication vous aide à mieux distinguer les deux ? Avez-vous des questions sur cette partie avant que nous passions à la suite (par exemple, comment on construit une image avec un `Dockerfile`) ?
+
+# Docker : Images vs Conteneurs – Le Moule et le Gâteau (Reformulation)
+
+Imaginez que vous voulez faire des gâteaux.
+
+## 1. L'Image Docker : La Recette et le Moule (et les ingrédients secs pré-mélangés)
+
+Une **Image Docker** est comme :
+*   La **recette détaillée** de votre gâteau : elle liste tous les ingrédients, les quantités, les étapes de préparation, la température du four, etc.
+*   Le **moule** spécifique que vous allez utiliser pour donner sa forme au gâteau.
+*   Parfois même, un sachet contenant **tous les ingrédients secs déjà pré-mélangés** selon la recette (comme un "mélange à gâteau" du commerce).
+
+**Ce qu'est une Image Docker :**
+
+*   **Un plan détaillé et complet :** Elle contient tout ce qu'il faut pour *potentiellement* créer et faire fonctionner votre application. Cela inclut le code de l'application, toutes les "dépendances" (comme la farine, le sucre, les œufs pour le gâteau – ce sont les librairies, les outils logiciels), et les instructions pour "cuire" (lancer) l'application.
+*   **C'est figé, ça ne change pas :** Votre recette écrite sur papier ne change pas d'elle-même. Le moule reste le même. Le sachet d'ingrédients secs reste le même tant que vous ne l'ouvrez pas. Une image Docker, une fois créée, est **en lecture seule**. Si vous voulez changer la recette, vous écrivez une nouvelle recette (vous créez une nouvelle image).
+*   **C'est un modèle, un "blueprint" :** Elle sert de base pour créer quelque chose de concret. Elle ne "tourne" pas, elle ne "fait" rien par elle-même, tout comme une recette sur une feuille de papier ne produit pas un gâteau toute seule.
+*   **Elle est stockée :** Vous pouvez garder votre recette et votre moule précieusement. Les images Docker sont stockées sur votre ordinateur ou dans des "bibliothèques d'images" en ligne (comme Docker Hub).
+
+**En résumé pour l'Image :** C'est le **"quoi faire"** et le **"avec quoi le faire"**, mais pas encore l'action de le faire. C'est le *potentiel*.
+
+## 2. Le Conteneur Docker : Le Gâteau Cuit et Prêt à Manger
+
+Un **Conteneur Docker** est comme :
+*   Le **gâteau que vous avez réellement préparé et cuit** en suivant la recette et en utilisant le moule et les ingrédients.
+
+**Ce qu'est un Conteneur Docker :**
+
+*   **L'application en action :** C'est votre application qui fonctionne réellement, qui exécute des tâches. C'est le gâteau que vous pouvez voir, toucher, et même "manger" (interagir avec).
+*   **C'est vivant et dynamique :** Le gâteau existe, il a une forme, il peut être chaud ou froid. Un conteneur est un processus qui s'exécute sur votre ordinateur. Il a un état (démarré, arrêté).
+*   **Créé à partir d'une Image :** Vous ne pouvez pas avoir de gâteau sans recette ni moule. Vous ne pouvez pas avoir de conteneur sans image. Le conteneur est une **instance** d'une image.
+*   **Isolé :** Si vous faites tomber un gâteau, cela n'affecte pas les autres gâteaux que vous pourriez faire avec la même recette et le même moule. Les conteneurs sont isolés les uns des autres et du système hôte. Ce qui se passe à l'intérieur d'un conteneur reste à l'intérieur (sauf configuration spécifique).
+*   **Peut être multiple :** Avec la même recette et le même moule, vous pouvez faire plusieurs gâteaux identiques. De la même manière, à partir d'**
