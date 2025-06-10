@@ -91,6 +91,91 @@ L'instruction `RUN` vous permet d'exécuter n'importe quelle commande comme si v
 
 ---
 
+# Le Dockerfile : `RUN` et l'Exécution de Plusieurs Commandes avec la Forme `exec`
+
+Vous avez posé une question très juste : peut-on utiliser `RUN` une seule fois avec la forme `exec` pour exécuter plusieurs commandes, comme on le fait avec `&&` dans la forme `shell` ?
+
+## Rappel des Deux Formes de `RUN`
+
+1.  **Forme `shell` :**
+    ```dockerfile
+    RUN commande1 && commande2 && commande3
+    ```
+    Ici, les commandes sont passées à un shell (par exemple `/bin/sh -c "commande1 && commande2 && commande3"`). Le shell se charge d'interpréter les `&&` et d'exécuter les commandes séquentiellement. Si l'une échoue, les suivantes ne sont pas exécutées et la construction de l'image échoue. Cela crée **une seule couche** pour toutes ces commandes.
+
+2.  **Forme `exec` :**
+    ```dockerfile
+    RUN ["executable", "param1", "param2"]
+    ```
+    Ici, Docker exécute directement l'`executable` spécifié avec les `param1`, `param2`, etc., comme arguments. **Il n'y a pas d'interpréteur de shell par défaut qui traiterait les `&&`, `;`, `||`, etc.**
+
+## Peut-on Faire Plusieurs Commandes Directement avec la Forme `exec` ?
+
+**Non, pas directement.** La syntaxe `RUN ["executable1", "arg1", "executable2", "arg2"]` n'est pas valide ou ne ferait pas ce que vous attendez. La forme `exec` attend un seul exécutable suivi de ses propres arguments.
+
+Par exemple, ceci **ne fonctionnerait pas** comme attendu pour exécuter deux commandes distinctes :
+```dockerfile
+# CECI NE FONCTIONNE PAS POUR LANCER DEUX COMMANDES SÉPARÉES
+RUN ["apt-get", "update", "&&", "apt-get", "install", "-y", "curl"]
+# OU
+# RUN ["apt-get", "update", "apt-get", "install", "-y", "curl"] # Interprété comme des arguments pour le premier apt-get
+```
+Dans le premier cas, `&&` serait probablement passé comme un argument littéral à `apt-get update`. Dans le second, `apt-get`, `install`, etc., seraient tous passés comme des arguments au premier `apt-get update`.
+
+## La Solution : Utiliser la Forme `exec` pour Appeler un Shell
+
+Si vous voulez absolument utiliser la forme `exec` (par exemple, pour éviter certains problèmes d'interprétation de variables par le shell ou pour une raison de style), mais que vous avez besoin d'exécuter plusieurs commandes en une seule couche, la solution est d'**utiliser la forme `exec` pour explicitement appeler un shell, et de passer votre chaîne de commandes à ce shell.**
+
+**Syntaxe :**
+```dockerfile
+RUN ["/bin/sh", "-c", "commande1 && commande2 && commande3"]
+```
+Ou avec un autre shell si nécessaire, comme `/bin/bash` :
+```dockerfile
+RUN ["/bin/bash", "-c", "commande1 && commande2 && commande3"]
+```
+
+**Explication :**
+*   `"/bin/sh"` (ou `"/bin/bash"`) est l'exécutable que vous appelez.
+*   `"-c"` est un argument pour le shell qui lui dit d'exécuter la chaîne de caractères qui suit comme une commande.
+*   `"commande1 && commande2 && commande3"` est la chaîne de commandes, exactement comme vous l'écririez dans la forme `shell` de `RUN`.
+
+**Exemple Concret :**
+Pour reprendre notre exemple d'installation de `curl` et `git` :
+
+*   **Forme `shell` (la plus courante et souvent la plus simple pour cela) :**
+    ```dockerfile
+    RUN apt-get update && \
+        apt-get install -y curl git && \
+        rm -rf /var/lib/apt/lists/*
+    ```
+
+*   **Équivalent avec la forme `exec` appelant un shell :**
+    ```dockerfile
+    RUN ["/bin/sh", "-c", "apt-get update && apt-get install -y curl git && rm -rf /var/lib/apt/lists/*"]
+    ```
+
+Les deux versions ci-dessus produiront **une seule couche d'image** et auront le même résultat final.
+
+## Pourquoi choisir l'une ou l'autre ?
+
+*   **Forme `shell` (`RUN commande1 && commande2`) :**
+    *   **Avantages :** Plus concise et naturelle pour des enchaînements de commandes shell simples. Permet d'utiliser facilement les fonctionnalités du shell comme les variables d'environnement (ex: `RUN echo $MA_VARIABLE`), les wildcards, les pipes (`|`), les redirections (`>`, `>>`), etc., sans avoir à les gérer explicitement.
+    *   **Inconvénients :** Peut parfois avoir des comportements inattendus avec l'expansion de variables ou les caractères spéciaux si on ne fait pas attention.
+
+*   **Forme `exec` (`RUN ["executable", "arg1", "arg2"]`) :**
+    *   **Avantages :** Plus explicite, pas d'interpréteur de commandes shell intermédiaire (sauf si vous en appelez un explicitement). Évite les problèmes d'interprétation des variables d'environnement par le shell (les variables ne sont pas substituées). C'est la forme préférée si vous voulez un contrôle total sur la manière dont la commande est exécutée ou si votre commande n'a pas besoin de fonctionnalités de shell.
+    *   **Inconvénients :** Plus verbeuse pour des enchaînements de commandes simples. Si vous avez besoin de fonctionnalités de shell (comme `&&`), vous devez explicitement appeler un shell (`RUN ["/bin/sh", "-c", "..."]`), ce qui peut sembler un peu redondant par rapport à la forme `shell` directe.
+
+**En résumé pour votre question :**
+Pour exécuter plusieurs commandes en une seule instruction `RUN` (et donc une seule couche) :
+1.  La **forme `shell`** est le moyen le plus direct : `RUN cmd1 && cmd2`.
+2.  Si vous tenez à utiliser la **forme `exec`**, vous devez le faire en appelant un shell : `RUN ["/bin/sh", "-c", "cmd1 && cmd2"]`.
+
+L'objectif principal de chaîner les commandes dans une seule instruction `RUN` (que ce soit avec la forme `shell` ou la forme `exec` appelant un shell) est de **minimiser le nombre de couches dans votre image Docker**, ce qui est une bonne pratique pour optimiser la taille de l'image et la vitesse de construction.
+
+---
+
 L'instruction `RUN` est l'un des piliers de la construction d'images. Elle vous donne le pouvoir de sculpter l'environnement de votre future application.
 
 Est-ce que le fonctionnement et l'utilité de `RUN` sont clairs pour vous ? Avez-vous des questions sur la syntaxe ou les exemples ?
