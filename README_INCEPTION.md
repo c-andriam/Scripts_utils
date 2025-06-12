@@ -26,10 +26,6 @@ Avant de plonger dans le projet, veuillez lire attentivement ces conseils :
 5.  **Sauvegardez Régulièrement :** Surtout vos fichiers de configuration et Dockerfiles.
 6.  **Lisez les Logs :** Les logs sont vos meilleurs amis pour le débogage (`docker logs <container_id>`, `docker-compose logs <service_name>`).
 
-*   Les deux dépôts GitHub qui m'ont beaucoup aidé pour le projet (expérience de vbachele) : [llescure/42_Inception](https://github.com/llescure/42_Inception) et [42cursus/inception par malatini](https://github.com/42cursus/inception).
-*   Ce dépôt GitHub qui m'a aidé pour les bonus (expérience de vbachele) : [twagger/inception](https://github.com/twagger/inception).
-
-Si vous avez des questions : n'hésitez pas à me contacter, je serai ravi de vous répondre ! Mon nom d'utilisateur Discord : vbachele#7949
 
 ## 2. Sommaire Détaillé
 
