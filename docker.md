@@ -1791,3 +1791,1261 @@ Nous avons couvert le nommage des images, les dépôts officiels et non officiel
 Nous avons terminé en examinant certaines des commandes les plus courantes utilisées pour travailler avec les images.
 
 Dans le prochain chapitre, nous ferons un tour similaire des conteneurs - le cousin d'exécution des images.
+
+### 7 : Les Conteneurs
+
+Maintenant que nous en savons un peu plus sur les images, il est temps de passer aux conteneurs. Comme il s'agit d'un livre sur Docker, nous parlerons spécifiquement des conteneurs Docker. Cependant, le projet Docker a travaillé d'arrache-pied pour implémenter les spécifications d'image et de conteneur publiées par l'Open Containers Initiative (OCI) sur https://www.opencontainers.org. Cela signifie qu'une partie de ce que vous apprendrez ici s'appliquera à d'autres runtimes de conteneurs conformes à l'OCI.
+
+Nous diviserons ce chapitre en trois parties habituelles :
+
+*   Le TL;DR
+*   L'analyse approfondie
+*   Les commandes
+
+Allons découvrir les conteneurs !
+
+#### Conteneurs Docker - Le TL;DR
+
+Un conteneur est l'instance d'exécution d'une image. De la même manière que nous pouvons démarrer une machine virtuelle (VM) à partir d'un modèle de machine virtuelle, nous démarrons un ou plusieurs conteneurs à partir d'une seule image. La grande différence entre une VM et un conteneur est que les conteneurs sont plus rapides et plus légers - au lieu d'exécuter un système d'exploitation complet comme une VM, les conteneurs partagent le SE/noyau avec l'hôte sur lequel ils s'exécutent.
+
+La Figure 7.1 montre une seule image Docker utilisée pour démarrer plusieurs conteneurs Docker.
+*(Figure 7.1)*
+
+La manière la plus simple de démarrer un conteneur est avec la commande `docker container run`. La commande peut prendre de nombreux arguments, mais dans sa forme la plus basique, vous lui indiquez une image à utiliser et une commande à exécuter : `docker container run <image> <commande>`. La commande suivante démarrera un conteneur Ubuntu Linux exécutant le shell Bash : `docker container run -it ubuntu /bin/bash`. Pour démarrer un conteneur Windows exécutant PowerShell, vous pourriez faire `docker container run -it microsoft/powershell:nanoserver PowerShell.exe`.
+
+Les options `-it` utilisées dans les commandes ci-dessus connecteront votre fenêtre de terminal actuelle au shell du conteneur.
+
+Les conteneurs s'exécutent jusqu'à ce que le programme qu'ils exécutent se termine. Dans les deux exemples ci-dessus, le conteneur Linux se terminera lorsque le shell Bash se terminera, et le conteneur Windows se terminera lorsque le processus PowerShell se terminera.
+
+Une façon très simple de le démontrer est de démarrer un nouveau conteneur et de lui dire d'exécuter la commande `sleep` pendant 10 secondes. Le conteneur démarrera, s'exécutera pendant 10 secondes et se terminera. Si vous exécutez la commande suivante depuis un hôte Linux (ou un hôte Windows en mode conteneurs Linux), votre shell s'attachera au shell du conteneur pendant 10 secondes puis se terminera : `docker container run alpine:latest sleep 10`. Vous pouvez faire de même avec un conteneur Windows avec la commande suivante `docker container run microsoft/powershell:nanoserver Start-Sleep -s 10`.
+
+Vous pouvez arrêter manuellement un conteneur avec la commande `docker container stop`, puis le redémarrer avec `docker container start`. Pour vous débarrasser d'un conteneur pour toujours, vous devez le supprimer explicitement en utilisant `docker container rm`.
+
+Voilà pour le résumé rapide ! Entrons maintenant dans les détails...
+
+#### Conteneurs Docker - L'analyse approfondie
+
+Les premières choses que nous aborderons ici sont les différences fondamentales entre un conteneur et une VM. C'est principalement de la théorie à ce stade, mais c'est important. En cours de route, nous indiquerons où le modèle de conteneur a des avantages potentiels par rapport au modèle de VM.
+
+> **Mise en garde :** En tant qu'auteur, je vais dire ceci avant d'aller plus loin. Beaucoup d'entre nous deviennent passionnés par ce que nous faisons et les compétences que nous avons. Je me souviens des grands partisans d'Unix résistant à la montée de Linux. Vous vous en souvenez peut-être aussi. Vous vous souvenez peut-être aussi des gens qui tentaient de résister à VMware et au mastodonte des VM. Dans les deux cas, « la résistance était futile ». Dans cette section, je vais souligner ce que je considère comme certains des avantages du modèle de conteneur par rapport au modèle de VM. Mais je suppose que beaucoup d'entre vous sont des experts en VM avec beaucoup d'investissement dans l'écosystème VM. Et je suppose qu'un ou deux d'entre vous pourraient vouloir se battre avec moi sur certaines des choses que je dis. Alors, soyons clairs... Je suis un grand gaillard et je vous mettrais une raclée au corps à corps :-D Je plaisante. Mais je n'essaie pas de détruire votre empire ou de dire que votre bébé est laid ! J'essaie d'aider. La seule raison pour laquelle j'écris ce livre est de vous aider à démarrer avec Docker et les conteneurs !
+> Bref, c'est parti.
+
+#### Conteneurs vs VMs
+
+Les conteneurs et les VMs ont tous deux besoin d'un hôte pour fonctionner. Cela peut être n'importe quoi, de votre ordinateur portable à un serveur *bare metal* dans votre centre de données, jusqu'à une instance dans le cloud public. Dans cet exemple, nous supposerons un seul serveur physique sur lequel nous devons exécuter 4 applications métier.
+
+Dans le modèle VM, le serveur physique est allumé et l'hyperviseur démarre (nous sautons le BIOS et le code du chargeur de démarrage, etc.). Une fois que l'hyperviseur a démarré, il s'approprie toutes les ressources physiques du système telles que le CPU, la RAM, le stockage et les cartes réseau (NICs). L'hyperviseur découpe ensuite ces ressources matérielles en versions virtuelles qui ont l'apparence, l'odeur et la sensation exactes de la réalité. Il les empaquette ensuite dans une construction logicielle appelée machine virtuelle (VM). Nous prenons ensuite ces VMs et installons un système d'exploitation et une application sur chacune d'elles. Nous avons dit que nous avions un seul serveur physique et que nous devions exécuter 4 applications, nous créerions donc 4 VMs, installerions 4 systèmes d'exploitation, puis installerions les 4 applications. Une fois terminé, cela ressemble un peu à la Figure 7.2.
+*(Figure 7.2)*
+
+Les choses sont un peu différentes dans le modèle de conteneur.
+
+Lorsque le serveur est allumé, le système d'exploitation de votre choix démarre. Dans le monde de Docker, il peut s'agir de Linux ou d'une version moderne de Windows prenant en charge les primitives de conteneur dans son noyau. Comme pour le modèle VM, le SE s'approprie toutes les ressources matérielles. Par-dessus le SE, nous installons un moteur de conteneur tel que Docker. Le moteur de conteneur prend ensuite les ressources du SE telles que l'arborescence des processus, le système de fichiers et la pile réseau, et les découpe en constructions isolées et sécurisées appelées conteneurs. Chaque conteneur a l'apparence, l'odeur et la sensation d'un véritable SE. À l'intérieur de chaque conteneur, nous pouvons exécuter une application. Comme précédemment, nous supposons un seul serveur physique avec 4 applications. Par conséquent, nous découperions 4 conteneurs et exécuterions une seule application à l'intérieur de chacun, comme le montre la Figure 7.3.
+*(Figure 7.3)*
+
+À un niveau élevé, nous pouvons dire que les hyperviseurs effectuent une **virtualisation matérielle** - ils découpent les ressources matérielles physiques en versions virtuelles. D'un autre côté, les conteneurs effectuent une **virtualisation du système d'exploitation** - ils découpent les ressources du SE en versions virtuelles.
+
+#### La taxe VM
+
+Développons ce que nous venons de couvrir et examinons l'un des principaux problèmes du modèle d'hyperviseur.
+
+Nous avons commencé avec le même serveur physique et le besoin d'exécuter 4 applications métier. Dans les deux modèles, nous avons installé soit un SE, soit un hyperviseur (un type de SE hautement optimisé pour les VMs). Jusqu'à présent, les modèles sont presque identiques. Mais c'est là que les similitudes s'arrêtent.
+
+Le modèle VM découpe ensuite les ressources matérielles de bas niveau en VMs. Chaque VM est une construction logicielle contenant un CPU virtuel, de la RAM virtuelle, un disque virtuel, etc. En tant que tel, chaque VM a besoin de son propre SE pour réclamer, initialiser et gérer toutes ces ressources virtuelles. Et malheureusement, chaque SE vient avec son propre lot de bagages et de surcoûts. Par exemple, chaque SE consomme une tranche de CPU, une tranche de RAM, une tranche de stockage, etc. La plupart ont besoin de leurs propres licences ainsi que de personnel et d'infrastructures pour les patcher et les mettre à jour. Chaque SE présente également une surface d'attaque considérable. Nous appelons souvent tout cela la **taxe SE**, ou **taxe VM** - chaque SE que vous installez consomme des ressources !
+
+Le modèle de conteneur a un seul noyau fonctionnant dans le SE hôte. Il est possible d'exécuter des dizaines ou des centaines de conteneurs sur un seul hôte, chaque conteneur partageant ce seul SE/noyau. Cela signifie un seul SE consommant du CPU, de la RAM et du stockage. Un seul SE qui a besoin d'une licence. Un seul SE qui doit être mis à jour et patché. Et un seul noyau de SE présentant une surface d'attaque. En somme, une seule facture de taxe SE !
+
+Cela peut ne pas sembler beaucoup dans notre exemple d'un seul serveur devant exécuter 4 applications métier. Mais lorsque nous parlons de centaines ou de milliers d'applications (VM ou conteneurs), cela peut changer la donne.
+
+Une autre chose à considérer est que, comme un conteneur n'est pas un SE complet, il démarre beaucoup plus rapidement qu'une VM. Rappelez-vous, il n'y a pas de noyau à l'intérieur d'un conteneur qui doit être localisé, décompressé et initialisé - sans parler de toute l'énumération et l'initialisation du matériel associées à un démarrage de noyau normal. Rien de tout cela n'est nécessaire lors du démarrage d'un conteneur ! Le seul noyau partagé au niveau du SE est déjà démarré ! Résultat net, les conteneurs peuvent démarrer en moins d'une seconde. La seule chose qui a un impact sur le temps de démarrage du conteneur est le temps qu'il faut pour démarrer l'application qu'il exécute.
+
+Tout cela signifie que le modèle de conteneur est plus léger et plus efficace que le modèle de VM. Nous pouvons empaqueter plus d'applications sur moins de ressources, les démarrer plus rapidement, et payer moins en frais de licence et d'administration, tout en présentant une surface d'attaque moindre pour le côté obscur. Que demander de plus !
+
+Maintenant que la théorie est derrière nous, jouons un peu avec des conteneurs.
+
+#### Exécuter des conteneurs
+
+Pour suivre ces exemples, vous aurez besoin d'un hôte Docker fonctionnel. Pour la plupart des commandes, peu importe qu'il s'agisse de Linux ou de Windows.
+
+##### Vérifier le démon Docker
+
+La première chose que je fais toujours lorsque je me connecte à un hôte Docker est de vérifier que Docker est en cours d'exécution.
+
+```shell
+$ docker version
+Client:
+ Version:      17.05.0-ce
+ API version:  1.29
+ Go version:   go1.7.5
+ Git commit:   89658be
+ Built:        Thu May  4 22:10:54 2017
+ OS/Arch:      linux/amd64
+
+Server:
+ Version:      17.05.0-ce
+ API version:  1.29 (minimum version 1.12)
+ Go version:   go1.7.5
+ Git commit:   89658be
+ Built:        Thu May  4 22:10:54 2017
+ OS/Arch:      linux/amd64
+ Experimental: false
+```
+
+Tant que vous obtenez une réponse dans les sections `Client` et `Server`, vous devriez être prêt. Si vous obtenez un code d'erreur dans la section `Server`, il y a de fortes chances que le démon Docker (serveur) ne soit pas en cours d'exécution, ou que votre compte utilisateur n'ait pas la permission d'y accéder.
+
+Si vous utilisez Linux et que votre compte utilisateur n'a pas la permission d'accéder au démon, vous devez vous assurer qu'il est membre du groupe Unix local `docker`. Si ce n'est pas le cas, vous pouvez l'ajouter avec `usermod -aG docker <user>`, puis vous devrez vous déconnecter et vous reconnecter à votre shell pour que les changements prennent effet.
+
+Si votre compte utilisateur est déjà membre du groupe local `docker`, le problème pourrait être que le démon Docker n'est pas en cours d'exécution. Pour vérifier l'état du démon Docker, exécutez l'une des commandes suivantes en fonction du système d'exploitation de votre hôte Docker.
+
+```shell
+//Exécutez cette commande sur les systèmes Linux n'utilisant pas Systemd
+$ service docker status
+docker start/running, process 29393
+
+//Exécutez cette commande sur les systèmes Linux utilisant Systemd
+$ systemctl is-active docker
+active
+
+//Exécutez cette commande sur les systèmes Windows Server 2016 depuis une fenêtre PowerShell
+> Get-Service docker
+Status   Name               DisplayName
+------   ----               -----------
+Running  docker             docker
+```
+
+En supposant que le démon Docker est en cours d'exécution, vous pouvez continuer.
+
+##### Démarrer un conteneur simple
+
+La manière la plus simple de démarrer un conteneur est avec la commande `docker container run`.
+
+La commande ci-dessous démarre un conteneur simple qui exécutera une version conteneurisée d'Ubuntu Linux.
+
+```shell
+$ docker container run -it ubuntu:latest /bin/bash
+Unable to find image 'ubuntu:latest' locally
+latest: Pulling from library/ubuntu
+952132ac251a: Pull complete
+82659f8f1b76: Pull complete
+c19118ca682d: Pull complete
+8296858250fe: Pull complete
+24e0251a0e2c: Pull complete
+Digest: sha256:f4691c96e6bbaa99d9...e95a60369c506dd6e6f6ab
+Status: Downloaded newer image for ubuntu:latest
+root@3027eb644874:/#
+```
+
+Un exemple Windows pourrait être `docker container run -it microsoft/powershell:nanoserver PowerShell.exe`.
+
+Le format de la commande est essentiellement `docker container run -<options> <image>:<tag> <commande>`.
+
+Décortiquons un peu la commande.
+
+Nous avons commencé avec `docker container run`, c'est la commande standard pour démarrer un nouveau conteneur. Nous avons ensuite utilisé les options `-it` pour rendre le conteneur interactif et l'attacher à notre terminal. Ensuite, nous lui avons dit d'utiliser l'image `ubuntu:latest` ou `microsoft/powershell:nanoserver`. Enfin, nous lui avons dit d'exécuter le shell Bash dans l'exemple Linux, et le programme `PowerShell.exe` dans l'exemple Windows.
+
+Lorsque nous avons appuyé sur Entrée, le client Docker a effectué les appels API appropriés au démon Docker. Le démon Docker a accepté la commande et a cherché dans le cache local de l'hôte Docker s'il avait déjà une copie de l'image demandée. Dans cet exemple, ce n'était pas le cas, alors il est allé sur Docker Hub pour voir s'il pouvait la trouver. Il l'a trouvée, l'a téléchargée localement et l'a stockée dans son cache.
+
+> **Note :** Dans une installation Linux standard, le démon Docker implémente l'API distante Docker sur un socket IPC/Unix local à `/var/run/docker.sock`. Sur Windows, il écoute sur un *pipe* nommé à `npipe:////./pipe/docker_engine`. Il est également possible de configurer le client et le démon Docker pour qu'ils fonctionnent sur le réseau. Le port réseau non-TLS par défaut pour Docker est 2375, le port TLS par défaut est 2376.
+
+Une fois l'image téléchargée, le démon a créé le conteneur et a exécuté la commande spécifiée à l'intérieur.
+
+Si vous regardez de près, vous verrez que votre invite de commande a changé et que vous êtes maintenant à l'intérieur du conteneur. Dans l'exemple ci-dessus, l'invite de commande a changé pour `root@3027eb644874:/#`. Le long nombre après le `@` correspond aux 12 premiers caractères de l'ID unique du conteneur.
+
+Essayez d'exécuter quelques commandes de base depuis l'intérieur du conteneur. Vous remarquerez peut-être que certaines commandes ne fonctionnent pas. C'est parce que les images que nous avons utilisées, comme presque toutes les images de conteneurs, sont hautement optimisées. Cela signifie qu'elles n'ont pas toutes les commandes et tous les paquets normaux installés.
+
+```shell
+root@3027eb644874:/# ls -l
+total 64
+drwxr-xr-x 2 root root 4096 Aug 19 00:50 bin
+...
+root@3027eb644874:/# ping www.docker.com
+bash: ping: command not found
+root@3027eb644874:/#
+```
+
+Comme le montre la sortie ci-dessus, l'utilitaire `ping` n'est pas inclus dans l'image officielle d'Ubuntu.
+
+##### Processus du conteneur
+
+Lorsque nous avons démarré le conteneur Ubuntu dans la section précédente, nous lui avons dit d'exécuter le shell Bash (`/bin/bash`). Cela fait du shell Bash le seul et unique processus en cours d'exécution à l'intérieur du conteneur. Vous pouvez le voir en exécutant `ps -elf` depuis l'intérieur du conteneur.
+
+```shell
+root@3027eb644874:/# ps -elf
+F S UID   PID  PPID C PRI  NI ADDR SZ WCHAN  STIME TTY          TIME CMD
+4 S root    1     0 0  80   0 -  4558 wait   00:47 ?        00:00:00 /bin/bash
+0 R root   11     1 0  80   0 -  8604 -      00:52 ?        00:00:00 ps -elf
+```
+
+> **Note :** Les conteneurs Windows sont légèrement différents et ont tendance à exécuter plusieurs processus.
+
+Cela signifie que si vous tapez `exit` pour quitter le shell Bash, le conteneur se terminera également. La raison en est qu'un conteneur ne peut pas exister sans un processus en cours d'exécution - tuer le shell Bash tuerait le seul processus du conteneur, entraînant également la mort du conteneur.
+
+Appuyez sur **Ctrl-PQ** pour quitter le conteneur sans le terminer. Cela vous ramènera au shell de votre hôte Docker et laissera le conteneur s'exécuter en arrière-plan. Vous pouvez utiliser la commande `docker container ls` pour voir la liste des conteneurs en cours d'exécution sur votre système.
+
+```shell
+$ docker container ls
+CONTAINER ID   IMAGE          COMMAND       CREATED       STATUS       NAMES
+302...74       ubuntu:latest  "/bin/bash"   6 minutes ago Up 6 minutes sick_montalcini
+```
+
+Il est important de comprendre que ce conteneur est toujours en cours d'exécution et que vous pouvez y rattacher votre terminal avec la commande `docker container exec`.
+
+```shell
+$ docker container exec -it 3027eb644874 bash
+root@3027eb644874:/#
+```
+
+Comme vous pouvez le voir, l'invite de commande a changé pour redevenir celle du conteneur. Si vous exécutez à nouveau la commande `ps`, vous verrez maintenant deux processus Bash. C'est parce que la commande `docker container exec` a créé un nouveau processus Bash et s'y est attachée. Cela signifie que taper `exit` depuis ce shell ne terminera pas le conteneur car le processus Bash d'origine continuera de s'exécuter.
+
+Tapez `exit` pour quitter le conteneur et vérifiez qu'il est toujours en cours d'exécution avec un `docker container ls`. Il est toujours en cours d'exécution.
+
+Si vous suivez les exemples, vous devriez arrêter et supprimer le conteneur avec les deux commandes suivantes (vous devrez substituer l'ID de votre conteneur).
+
+```shell
+$ docker container stop 3027eb64487
+$ docker container rm 3027eb64487
+```
+
+##### Cycle de vie du conteneur
+
+C'est un mythe courant que les conteneurs ne peuvent pas persister les données. Ils le peuvent !
+
+Dans cette section, nous examinerons le cycle de vie d'un conteneur - de la naissance à la mort éventuelle, en passant par le travail et les vacances.
+
+Commençons un autre conteneur pour le suivre tout au long de son cycle de vie.
+
+```shell
+$ docker container run --name percy -it ubuntu:latest /bin/bash
+root@9cb2d2fd1d65:/#
+```
+
+Voilà notre conteneur créé, et nous l'avons nommé "percy" pour persistant :-S. Mettons-le au travail en y écrivant des données.
+
+```shell
+root@9cb2d2fd1d65:/# cd tmp
+root@9cb2d2fd1d65:/tmp# echo "DevOps FTW" > newfile
+root@9cb2d2fd1d65:/tmp# cat newfile
+DevOps FTW
+```
+
+Appuyez sur **Ctrl-PQ** pour quitter le conteneur sans le tuer. Maintenant, utilisez la commande `docker container stop` pour arrêter le conteneur et le mettre en vacances.
+
+```shell
+$ docker container stop percy
+percy
+```
+
+Exécutez `docker container ls -a` pour voir tous les conteneurs, y compris ceux qui sont arrêtés.
+
+```shell
+$ docker container ls -a
+CONTAINER ID   IMAGE          COMMAND       CREATED         STATUS                     NAMES
+9cb...65       ubuntu:latest  "/bin/bash"   4 minutes ago   Exited (0) 2 seconds ago   percy
+```
+
+Maintenant, nous voyons le conteneur avec le statut `Exited (0)`. Utilisons la commande `docker container start` pour le ramener de vacances.
+
+```shell
+$ docker container start percy
+percy
+```
+
+Le conteneur arrêté est maintenant redémarré. Il est temps de vérifier que le fichier que nous avons créé plus tôt existe toujours. Connectez-vous au conteneur redémarré avec `docker container exec`.
+
+```shell
+$ docker container exec -it percy bash
+root@9cb2d2fd1d65:/#
+```
+
+Vérifiez que le fichier que vous avez créé plus tôt est toujours là.
+
+```shell
+root@9cb2d2fd1d65:/# cd tmp
+root@9cb2d2fd1d65:/# cat newfile
+DevOps FTW
+```
+
+Comme par magie, le fichier que vous avez créé est toujours là ! Cela prouve que l'arrêt d'un conteneur ne détruit pas le conteneur ni les données qu'il contient. Bien que cet exemple illustre la nature persistante des conteneurs, je dois souligner que les **volumes** sont le moyen privilégié de stocker des données persistantes dans les conteneurs.
+
+Maintenant, tuons le conteneur et supprimons-le de notre système.
+
+```shell
+$ docker container stop percy
+percy
+$ docker container rm percy
+percy
+$ docker container ls -a
+CONTAINER ID   IMAGE         COMMAND    CREATED   STATUS    PORTS     NAMES
+```
+
+Le conteneur est maintenant supprimé.
+
+##### Arrêter les conteneurs proprement
+
+La commande `docker container stop` envoie un signal `SIGTERM` au processus avec le PID 1 à l'intérieur du conteneur. Cela donne au processus une chance de nettoyer les choses et de s'arrêter proprement. S'il ne se termine pas dans les 10 secondes, il recevra un `SIGKILL`. C'est effectivement la balle dans la tête.
+
+La commande `docker container rm <container> -f` ne s'embête pas à demander gentiment avec un `SIGTERM`, elle passe directement au `SIGKILL`.
+
+##### Exemple de serveur web
+
+Dans cet exemple, nous allons démarrer un nouveau conteneur à partir d'une image qui exécute un serveur web très simple sur le port 8080.
+
+```shell
+$ docker container run -d --name webserver -p 80:8080 \
+nigelpoulton/pluralsight-docker-ci
+...
+6efa1838cd51b92a4817e0e7483d103bf72a7ba7ffb5855080128d85043fef21
+```
+
+Remarquez que votre invite de commande n'a pas changé. C'est parce que nous avons démarré ce conteneur en arrière-plan avec l'option `-d`.
+
+L'option `-p 80:8080` mappe les ports de l'hôte Docker aux ports à l'intérieur du conteneur. Ici, nous mappons le port 80 sur l'hôte Docker au port 8080 à l'intérieur du conteneur.
+
+Une commande `docker container ls` montrera le conteneur en cours d'exécution et les ports mappés.
+
+```shell
+$ docker container ls
+CONTAINER ID   COMMAND         STATUS         PORTS                  NAMES
+6efa1838cd51   "/bin/sh -c..." Up 2 minutes   0.0.0.0:80->8080/tcp   webserver
+```
+
+Maintenant que le conteneur est en cours d'exécution et que les ports sont mappés, nous pouvons nous connecter au conteneur en pointant un navigateur web sur l'adresse IP ou le nom DNS de l'hôte Docker sur le port 80.
+*(Figure 7.4)*
+
+##### Inspecter les conteneurs
+
+Dans l'exemple précédent, vous avez peut-être remarqué que nous n'avons pas spécifié de programme pour le conteneur. Comment cela s'est-il produit ?
+
+Lors de la construction d'une image Docker, il est possible d'intégrer une commande ou un programme par défaut. Si nous exécutons une commande `docker image inspect` sur l'image que nous avons utilisée, nous pourrons voir le programme que le conteneur exécutera au démarrage.
+
+```shell
+$ docker image inspect nigelpoulton/pluralsight-docker-ci
+[
+  {
+    ...
+    "Cmd": [
+      "/bin/sh",
+      "-c",
+      "#(nop) CMD [\"/bin/sh\" \"-c\" \"cd /src && node ./app.js\"]"
+    ],
+    ...
+]
+```
+
+Les entrées après `"Cmd"` montrent la ou les commandes que le conteneur exécutera. Si vous supprimez tous les échappements du shell, vous obtenez la commande suivante : `/bin/sh -c "cd /src && node ./app.js"`.
+
+##### Faire le ménage
+
+Voici le moyen le plus simple et le plus rapide de se débarrasser de tous les conteneurs en cours d'exécution sur votre hôte Docker. **Attention**, la procédure détruira de force tous les conteneurs. Cela ne doit jamais être effectué sur des systèmes de production.
+
+Exécutez la commande suivante depuis le shell de votre hôte Docker pour supprimer tous les conteneurs.
+
+```shell
+$ docker container rm $(docker container ls -aq) -f
+6efa1838cd51
+```
+
+Dans cet exemple, nous n'avions qu'un seul conteneur en cours d'exécution. Cependant, la commande fonctionne de la même manière que la commande `docker image rm $(docker image ls -q)` que nous avons utilisée dans le chapitre précédent. Nous savons déjà que la commande `docker container rm` supprime les conteneurs. Lui passer `$(docker container ls -aq)` comme argument lui passe effectivement l'ID de chaque conteneur sur le système. L'option `-f` force l'opération afin que les conteneurs en cours d'exécution soient également détruits. Résultat net... tous les conteneurs, en cours d'exécution ou arrêtés, seront détruits et supprimés du système.
+
+#### Conteneurs - Les commandes
+
+*   `docker container run` est la commande utilisée pour démarrer de nouveaux conteneurs. Dans sa forme la plus simple, elle accepte une image et une commande comme arguments. L'image est utilisée pour créer le conteneur et la commande est le processus ou l'application que vous voulez que le conteneur exécute. Cet exemple démarrera un conteneur Ubuntu au premier plan et exécutera le shell Bash : `docker container run -it ubuntu /bin/bash`.
+*   **Ctrl-PQ** détachera votre shell du terminal d'un conteneur et laissera le conteneur en cours d'exécution (état UP) en arrière-plan.
+*   `docker container ls` liste tous les conteneurs à l'état en cours d'exécution (UP). Si vous ajoutez l'option `-a`, vous verrez également les conteneurs à l'état arrêté (Exited).
+*   `docker container exec` vous permet d'exécuter un nouveau processus à l'intérieur d'un conteneur en cours d'exécution. C'est utile pour attacher le shell de votre hôte Docker à un terminal à l'intérieur d'un conteneur en cours d'exécution. Cette commande démarrera un nouveau shell Bash à l'intérieur d'un conteneur en cours d'exécution et s'y connectera : `docker container exec -it <nom-conteneur ou id-conteneur> bash`. Pour que cela fonctionne, l'image utilisée pour créer votre conteneur doit contenir le shell Bash.
+*   `docker container stop` arrêtera un conteneur en cours d'exécution et le mettra à l'état (Exited (0)). Il le fait en envoyant un `SIGTERM` au processus avec le PID 1 à l'intérieur du conteneur. Si le processus ne s'est pas nettoyé et arrêté dans les 10 secondes, un `SIGKILL` sera envoyé pour forcer l'arrêt du conteneur. `docker container stop` accepte les ID et les noms de conteneurs comme arguments.
+*   `docker container start` redémarrera un conteneur arrêté (Exited). Vous pouvez donner à `docker container start` le nom ou l'ID d'un conteneur.
+*   `docker container rm` supprimera un conteneur arrêté. Vous pouvez spécifier les conteneurs par nom ou par ID. Il est recommandé d'arrêter un conteneur avec la commande `docker container stop` avant de le supprimer avec `docker rm`.
+*   `docker container inspect` vous montrera des informations détaillées sur la configuration et l'exécution d'un conteneur. Il accepte les noms et les ID de conteneurs comme argument principal.
+
+### Résumé du chapitre
+
+Dans ce chapitre, nous avons comparé et contrasté les modèles de conteneur et de VM. Nous avons examiné le problème de la « taxe SE » du modèle VM et vu comment le modèle de conteneur peut apporter d'énormes gains d'efficacité, de la même manière que le modèle VM a apporté d'énormes avantages par rapport au modèle physique.
+
+Nous avons vu comment utiliser la commande `docker container run` pour démarrer quelques conteneurs simples, et nous avons vu la différence entre les conteneurs interactifs au premier plan et les conteneurs fonctionnant en arrière-plan.
+
+Nous savons que tuer le processus avec le PID 1 à l'intérieur d'un conteneur tuera le conteneur. Et nous avons vu comment démarrer, arrêter et supprimer des conteneurs.
+
+Nous avons terminé le chapitre en utilisant la commande `docker container inspect` pour afficher les métadonnées de configuration détaillées.
+
+Jusqu'ici, tout va bien !
+
+Dans le prochain chapitre, nous verrons comment orchestrer des applications conteneurisées sur plusieurs hôtes Docker avec des technologies révolutionnaires introduites dans Docker 1.12.
+
+---
+
+### 8 : Conteneuriser une Application
+
+Docker, c'est avant tout prendre des applications et les exécuter dans des conteneurs.
+
+Le processus consistant à prendre une application et à la configurer pour qu'elle s'exécute en tant que conteneur s'appelle la « conteneurisation ». Parfois, nous l'appelons « Dockerisation ».
+
+Dans ce chapitre, nous allons parcourir le processus de conteneurisation d'une simple application web.
+
+Nous diviserons ce chapitre en trois parties habituelles :
+
+*   Le TL;DR
+*   L'analyse approfondie
+*   Les commandes
+
+Allons conteneuriser une application !
+
+#### Conteneuriser une App - Le TL;DR
+
+Les conteneurs, c'est une affaire d'applications ! En particulier, il s'agit de rendre les applications simples à construire (*build*), à distribuer (*ship*) et à exécuter (*run*).
+
+Le processus de conteneurisation d'une application se présente comme suit :
+
+1.  Commencez avec le code de votre application.
+2.  Créez un **Dockerfile** qui décrit votre application, ses dépendances et comment l'exécuter.
+3.  Fournissez ce Dockerfile à la commande `docker image build`.
+4.  Détendez-vous pendant que Docker construit votre application en une image Docker.
+
+Une fois que votre application est conteneurisée (transformée en image Docker), vous êtes prêt à la distribuer et à l'exécuter en tant que conteneur.
+
+La Figure 8.1 montre le processus de construction, de distribution et d'exécution d'une application (désolé pour les couleurs sur le diagramme).
+*(Figure 8.1)*
+
+#### Conteneuriser une App - L'analyse approfondie
+
+Le reste de ce chapitre vous guidera à travers le processus de conteneurisation d'une simple application web Node.js basée sur Linux. Le processus est le même pour Windows, et les futures éditions du livre incluront un exemple Windows.
+
+Nous accomplirons les étapes de haut niveau suivantes :
+- Obtenir le code de l'application
+- Inspecter le Dockerfile
+- Conteneuriser l'application
+- Exécuter l'application
+- Tester l'application
+- Regarder d'un peu plus près
+- Passer en production avec les *Multi-stage Builds*
+
+##### Obtenir le code de l'application
+
+L'application utilisée dans cet exemple peut être clonée depuis GitHub :
+`https://github.com/nigelpoulton/psweb.git`
+
+Clonez l'application d'exemple depuis GitHub.
+
+```shell
+$ git clone https://github.com/nigelpoulton/psweb.git
+Cloning into 'psweb'...
+...
+```
+
+L'opération de clonage crée un nouveau répertoire appelé `psweb`. Placez-vous dans le répertoire `psweb` et listez son contenu.
+
+```shell
+$ cd psweb
+$ ls -l
+total 28
+-rw-r--r-- 1 root root  341 Sep 29 16:26 app.js
+-rw-r--r-- 1 root root  216 Sep 29 16:26 circle.yml
+-rw-r--r-- 1 root root  338 Sep 29 16:26 Dockerfile
+-rw-r--r-- 1 root root  421 Sep 29 16:26 package.json
+-rw-r--r-- 1 root root  370 Sep 29 16:26 README.md
+drwxr-xr-x 2 root root 4096 Sep 29 16:26 test
+drwxr-xr-x 2 root root 4096 Sep 29 16:26 views
+```
+
+Ce répertoire contient tout le code source de l'application, ainsi que des sous-répertoires pour les vues et les tests unitaires.
+
+##### Inspecter le Dockerfile
+
+Remarquez que le dépôt contient un fichier appelé `Dockerfile`. C'est le fichier qui décrit l'application et indique à Docker comment construire une image à partir de celle-ci.
+
+Le répertoire qui contient le code de votre application est appelé le **contexte de build** (*build context*). Il est courant de conserver votre Dockerfile à la racine du contexte de build. Il est également important que `Dockerfile` commence par un « D » majuscule et soit en un seul mot.
+
+Regardons le contenu du Dockerfile.
+
+```shell
+$ cat Dockerfile
+FROM alpine
+LABEL maintainer="nigelpoulton@hotmail.com"
+RUN apk add --update nodejs nodejs-npm
+COPY . /src
+WORKDIR /src
+RUN npm install
+EXPOSE 8080
+ENTRYPOINT ["node", "./app.js"]
+```
+
+À un niveau élevé, ce Dockerfile dit : commencez avec l'image `alpine`, ajoutez "nigelpoulton@hotmail.com" comme mainteneur, installez Node.js et NPM, copiez le code de l'application, définissez le répertoire de travail, installez les dépendances, exposez un port réseau et définissez `app.js` comme l'application par défaut à exécuter.
+
+Regardons cela plus en détail.
+
+*   `FROM alpine` : Tous les Dockerfiles commencent par l'instruction `FROM`. Ce sera la couche de base de l'image.
+*   `LABEL maintainer="..."` : Crée une étiquette (LABEL) et spécifie le mainteneur de l'image. Les étiquettes sont d'excellents moyens d'ajouter des métadonnées personnalisées.
+*   `RUN apk add --update nodejs nodejs-npm` : Utilise le gestionnaire de paquets `apk` d'Alpine pour installer `nodejs` et `nodejs-npm` dans l'image. L'instruction `RUN` installe ces paquets en tant que nouvelle couche d'image.
+*   `COPY . /src` : Copie les fichiers de l'application depuis le contexte de build dans l'image en tant que nouvelle couche.
+*   `WORKDIR /src` : Définit le répertoire de travail pour le reste des instructions du fichier. Cette information est ajoutée en tant que métadonnée.
+*   `RUN npm install` : Utilise `npm` pour installer les dépendances de l'application listées dans `package.json`.
+*   `EXPOSE 8080` : L'application expose un service web sur le port TCP 8080, donc le Dockerfile documente cela. C'est une métadonnée.
+*   `ENTRYPOINT ["node", "./app.js"]` : Est utilisé pour définir l'application principale que l'image (conteneur) doit exécuter. C'est également une métadonnée.
+
+##### Conteneuriser l'app/construire l'image
+
+Maintenant que nous avons le code de l'application et le Dockerfile, construisons l'image !
+
+La commande suivante construira une nouvelle image appelée `web:latest`. Le point (`.`) à la fin de la commande indique à Docker d'utiliser le répertoire de travail actuel du shell comme contexte de build.
+
+```shell
+$ docker image build -t web:latest .
+Sending build context to Docker daemon 74.75kB
+Step 1/8 : FROM alpine
+...
+Successfully built e33cdd8266d0
+Successfully tagged web:latest
+```
+
+Vérifiez que l'image existe dans le dépôt local de votre hôte Docker.
+
+```shell
+$ docker image ls
+REPOSITORY   TAG      IMAGE ID       CREATED          SIZE
+web          latest   e33cdd8266d0   About a minute ago   55.6MB
+```
+
+Félicitations, l'application est conteneurisée !
+
+##### Exécuter l'application
+
+La commande suivante démarrera un nouveau conteneur appelé `c1` basé sur l'image `web:latest` que nous venons de créer. Elle mappe le port 80 de l'hôte Docker au port 8080 à l'intérieur du conteneur.
+
+```shell
+$ docker container run -d --name c1 -p 80:8080 web:latest
+```
+
+L'option `-d` exécute le conteneur en arrière-plan, et l'option `-p 80:8080` mappe les ports.
+
+Vérifiez que le conteneur est en cours d'exécution et vérifiez le mappage des ports.
+
+```shell
+$ docker container ls
+ID         IMAGE       COMMAND          ... PORTS
+82...88    web:latest  "node ./app.js"  ... 0.0.0.0:80->8080/tcp
+```
+
+##### Tester la connectivité
+
+Ouvrez un navigateur web et pointez-le vers le nom DNS ou l'adresse IP de l'hôte sur lequel le conteneur s'exécute. Vous verrez la page web illustrée à la Figure 8.6.
+*(Figure 8.6)*
+
+Félicitations, l'application est conteneurisée et en cours d'exécution !
+
+##### Regarder d'un peu plus près
+
+*   Les lignes de commentaires dans un Dockerfile commencent par le caractère `#`.
+*   Toutes les lignes non commentées sont des **Instructions**.
+*   Certaines instructions créent de nouvelles couches (`FROM`, `RUN`, `COPY`), tandis que d'autres ajoutent simplement des métadonnées à l'image (`EXPOSE`, `WORKDIR`, `ENV`, `ENTRYPOINT`).
+*   Vous pouvez voir les instructions qui ont été utilisées pour construire l'image avec la commande `docker image history`.
+*   Le processus de build de base est : démarrer un conteneur temporaire > exécuter l'instruction du Dockerfile à l'intérieur de ce conteneur > sauvegarder les résultats en tant que nouvelle couche d'image > supprimer le conteneur temporaire.
+
+##### Passer en production avec les *Multi-stage Builds*
+
+En matière d'images Docker, **gros c'est mal** ! Gros signifie lent, difficile à manipuler et une grande surface d'attaque.
+
+Le but du jeu est de ne livrer en production que des images contenant ce qui est nécessaire pour exécuter votre application.
+
+Le problème est que garder les images petites était un travail difficile. Il fallait des astuces comme enchaîner les commandes dans une seule instruction `RUN` ou utiliser le *builder pattern*, qui nécessitait plusieurs Dockerfiles et des scripts complexes.
+
+**Les *Multi-stage builds* à la rescousse !**
+
+Avec les *multi-stage builds*, nous avons un seul Dockerfile contenant plusieurs instructions `FROM`. Chaque instruction `FROM` est une nouvelle étape de build (*build stage*) qui peut facilement copier des artefacts des étapes précédentes.
+
+Regardons un exemple avec l'application disponible sur `https://github.com/nigelpoulton/atsea-sample-shop-app.git`.
+
+Voici le Dockerfile :
+```dockerfile
+FROM node:latest AS storefront
+WORKDIR /usr/src/atsea/app/react-app
+COPY react-app .
+RUN npm install
+RUN npm run build
+
+FROM maven:latest AS appserver
+WORKDIR /usr/src/atsea
+COPY pom.xml .
+RUN mvn -B -f pom.xml -s /usr/share/maven/ref/settings-docker.xml dependency:resolve
+COPY . .
+RUN mvn -B -s /usr/share/maven/ref/settings-docker.xml package -DskipTests
+
+FROM java:8-jdk-alpine AS production
+RUN adduser -Dh /home/gordon gordon
+WORKDIR /static
+COPY --from=storefront /usr/src/atsea/app/react-app/build/ .
+WORKDIR /app
+COPY --from=appserver /usr/src/atsea/target/AtSea-0.0.1-SNAPSHOT.jar .
+ENTRYPOINT ["java", "-jar", "/app/AtSea-0.0.1-SNAPSHOT.jar"]
+CMD ["--spring.profiles.active=postgres"]
+```
+
+Ce Dockerfile a trois instructions `FROM`, donc trois étapes de build : `storefront`, `appserver`, et `production`.
+
+1.  L'étape `storefront` utilise une grande image `node:latest` pour construire la partie front-end de l'application.
+2.  L'étape `appserver` utilise une grande image `maven:latest` pour construire le back-end de l'application.
+3.  L'étape finale, `production`, part d'une petite image `java:8-jdk-alpine`. Elle utilise `COPY --from=...` pour copier **uniquement les artefacts de production** (le front-end construit et le fichier .jar du back-end) des étapes précédentes.
+
+Les outils de build (Node, Maven) et les fichiers sources intermédiaires ne sont pas inclus dans l'image finale, ce qui la rend beaucoup plus petite et plus sécurisée.
+
+Construisons-la.
+
+```shell
+$ git clone https://github.com/nigelpoulton/atsea-sample-shop-app.git
+$ cd atsea-sample-shop-app/app
+$ docker image build -t multi:stage .
+...
+Successfully built 3dc0d5e6223e
+Successfully tagged multi:stage
+```
+
+Regardons les images créées.
+
+```shell
+$ docker image ls
+REPO           TAG             IMAGE ID       CREATED          SIZE
+node           latest          9ea1c3e33a0b   4 days ago       673MB
+<none>         <none>          6598db3cefaf   3 minutes ago    816MB
+maven          latest          cbf114925530   2 weeks ago      750MB
+<none>         <none>          d5b619b83d9e   1 minute ago     891MB
+java           8-jdk-alpine    3fd9dd82815c   7 months ago     145MB
+multi          stage           3dc0d5e6223e   1 minute ago     210MB
+```
+
+Vous pouvez voir que l'image finale (`multi:stage`) est de 210 Mo, ce qui est nettement plus petit que les images de build intermédiaires (`node`, `maven`, et les images `<none>` qui en résultent, qui font plus de 600 Mo chacune).
+
+Le résultat net est une petite image de production créée par un seul Dockerfile, une commande `docker image build` normale, et aucun script supplémentaire !
+Les builds multi-étapes (Multi-stage builds) sont une nouveauté de Docker 17.05 et constituent une excellente fonctionnalité pour créer de petites images prêtes pour la production.
+
+#### Conteneuriser une application - Les commandes
+
+*   `docker image build` est la commande qui lit un Dockerfile et conteneurise une application. L'option `-t` étiquette l'image, l'option `-f` vous permet de spécifier le nom et l'emplacement du Dockerfile. Avec l'option `-f`, il est possible d'utiliser un Dockerfile avec un nom arbitraire. Le contexte de build (*build context*) est l'endroit où se trouvent les fichiers de votre application, et cela peut être un répertoire sur votre hôte Docker local ou un dépôt Git distant.
+*   L'instruction `FROM` dans un Dockerfile spécifie l'image de base pour la nouvelle image que vous allez construire. C'est généralement la première instruction dans un Dockerfile.
+*   L'instruction `RUN` dans un Dockerfile vous permet d'exécuter des commandes à l'intérieur de l'image qui créent de nouvelles couches. Chaque instruction `RUN` crée une seule nouvelle couche.
+*   L'instruction `COPY` dans un Dockerfile ajoute des fichiers dans l'image en tant que nouvelle couche. Il est courant d'utiliser l'instruction `COPY` pour copier le code de votre application dans une image.
+*   L'instruction `EXPOSE` dans un Dockerfile documente le port réseau que l'application utilise.
+*   L'instruction `ENTRYPOINT` dans un Dockerfile définit l'application par défaut à exécuter lorsque l'image est démarrée en tant que conteneur.
+*   D'autres instructions Dockerfile incluent `LABEL`, `ENV`, `ONBUILD`, `HEALTHCHECK`, `CMD` et plus encore...
+
+### Résumé du chapitre
+
+Dans ce chapitre, nous avons appris à conteneuriser (Dockeriser) une application.
+
+Nous avons récupéré du code d'application depuis un dépôt Git distant. Le dépôt incluait le code de l'application, ainsi qu'un Dockerfile contenant des instructions sur la façon de construire l'application en une image. Nous avons appris les bases du fonctionnement des Dockerfiles, et en avons fourni un à une commande `docker image build` pour créer une nouvelle image.
+
+Une fois l'image créée, nous avons démarré un conteneur à partir de celle-ci et avons testé son fonctionnement avec un navigateur web.
+
+Après cela, nous avons vu comment les *multi-stage builds* nous offrent un moyen simple de construire et de distribuer des images plus petites dans nos environnements de production.
+
+Nous avons également appris que le Dockerfile est un excellent outil pour documenter une application. En tant que tel, il peut accélérer l'intégration de nouveaux développeurs et combler le fossé entre les développeurs et les équipes d'exploitation !
+
+Bien que l'exemple cité soit un exemple basé sur Linux, le processus de conteneurisation des applications Windows est le même : commencez avec le code de votre application, créez un Dockerfile décrivant l'application, construisez l'image avec `docker image build`.
+
+Mission accomplie !
+
+---
+
+### 9 : Le Mode Swarm
+
+Maintenant que nous savons comment installer Docker, télécharger des images et travailler avec des conteneurs, la prochaine chose dont nous avons besoin est un moyen de gérer tout cela à grande échelle. C'est là que l'orchestration et le mode Swarm entrent en jeu.
+
+Comme d'habitude, nous adopterons une approche en trois étapes avec une explication de haut niveau au début, suivie d'une section plus longue avec tous les détails et quelques exemples, et nous terminerons par une liste des principales commandes que nous avons apprises.
+
+Les exemples et les sorties de ce chapitre proviendront d'un Swarm basé sur Linux. Cependant, toutes les commandes et fonctionnalités fonctionnent également avec Docker sur Windows.
+
+> **Note :** Si vous suivez avec Windows dans un terminal PowerShell et que vous listez les options de commande sur plusieurs lignes, vous devrez indiquer la continuation sur la ligne suivante avec des apostrophes inversées (backticks) (`).
+
+Nous diviserons ce chapitre en trois parties habituelles :
+
+*   Le TL;DR
+*   L'analyse approfondie
+*   Les commandes
+
+Allons construire un swarm !
+
+#### Mode Swarm - Le TL;DR
+
+C'est une chose de suivre les exemples simples de ce livre, mais c'en est une tout autre d'exécuter des milliers de conteneurs sur des dizaines ou des centaines d'hôtes Docker ! C'est là que l'**orchestration** entre en jeu !
+
+À un niveau élevé, l'orchestration consiste à automatiser et à simplifier la gestion des applications conteneurisées à grande échelle. Des choses comme la replanification automatique des conteneurs lorsque les nœuds tombent en panne, l'augmentation des ressources (*scaling*) lorsque la demande augmente, et le déploiement en douceur des mises à jour et des correctifs dans les environnements de production en direct.
+
+Pendant très longtemps, une telle orchestration était difficile. Des outils comme Docker Swarm et Kubernetes étaient disponibles, mais ils étaient compliqués. Puis est arrivé Docker 1.12 et le nouveau **mode Swarm natif**, et du jour au lendemain, les choses ont changé. Toute cette orchestration est devenue beaucoup plus simple.
+
+Voilà l'explication rapide. Entrons maintenant dans les détails.
+
+#### Mode Swarm - L'analyse approfondie
+
+Tout d'abord, comme le suggère le titre du chapitre, nous allons nous concentrer sur le mode Swarm - les technologies natives de clustering et d'orchestration qui ont été livrées pour la première fois avec Docker 1.12. D'autres solutions d'orchestration existent, notamment Kubernetes, mais nous ne les couvrirons pas ici.
+
+##### Concepts et terminologie
+
+Le mode Swarm a apporté une multitude de changements et d'améliorations à la façon dont nous gérons les conteneurs à grande échelle. Au cœur de ces changements se trouve le clustering natif des hôtes Docker, profondément intégré à la plateforme Docker.
+
+Les gens de Docker, Inc. n'aiment pas vraiment utiliser le terme *cluster*. Ils appellent un cluster d'hôtes Docker orchestrés un **swarm**, et les hôtes Docker participant à un swarm sont dits fonctionner en **mode Swarm**. Nous essaierons d'être cohérents et d'utiliser ces termes pour le reste du livre. Nous commencerons également à utiliser le terme **mode moteur unique** (*single-engine mode*) pour désigner les hôtes Docker qui ne fonctionnent pas en mode Swarm.
+*(Figure 9.1)*
+
+##### Rétrocompatibilité
+
+L'introduction du mode Swarm était extrêmement importante, mais le maintien de la rétrocompatibilité l'est tout autant ! Par conséquent, le mode Swarm est entièrement optionnel. Une installation standard de Docker fonctionnera par défaut en mode moteur unique, garantissant une compatibilité à 100% avec les versions précédentes de Docker.
+
+##### Introduction au mode Swarm
+
+Un **swarm** se compose d'un ou plusieurs **nœuds**. Les nœuds sont configurés en tant que **managers** ou **workers**.
+*   Les **Managers** s'occupent de l'état du swarm et sont chargés de répartir les **tâches** aux workers.
+*   Les **Workers** acceptent les tâches des managers et les exécutent.
+
+Dans le contexte d'un swarm, les **tâches** (ou **répliques**) sont des conteneurs.
+
+La chose suivante que nous devons connaître est les **services**. Au plus haut niveau, les services sont le moyen d'exécuter des tâches sur un Swarm. Pour exécuter une tâche (conteneur) sur un Swarm, nous l'enveloppons dans un service et déployons le service. Sous le capot, les services sont un moyen déclaratif de définir l'**état souhaité** sur le swarm.
+
+La configuration et l'état du swarm sont conservés dans une base de données **etcd** distribuée située sur tous les managers du swarm.
+
+Une autre chose qui change la donne avec le mode Swarm est son approche de la **sécurité**. Le **TLS** est si étroitement intégré qu'il n'est pas possible de construire un swarm sans lui. Il est utilisé pour chiffrer les communications, authentifier les nœuds et autoriser les rôles. La rotation automatique des clés est également incluse !
+
+##### Configuration du laboratoire
+
+Pour le reste de ce chapitre, nous allons construire le laboratoire montré dans la Figure 9.2 avec 6 nœuds configurés en 3 managers et 3 workers.
+*(Figure 9.2)*
+
+##### Activer le mode Swarm
+
+Exécuter `docker swarm init` sur un hôte Docker en mode moteur unique fera passer ce nœud en mode Swarm et créera un nouveau swarm. Il fera également de ce nœud le premier manager du Swarm.
+
+1.  Connectez-vous à `mgr1` et initialisez un nouveau swarm.
+    ```shell
+    $ docker swarm init \
+    --advertise-addr 10.0.0.1:2377 \
+    --listen-addr 10.0.0.1:2377
+    Swarm initialized: current node (d21lyz...c79qzkx) is now a manager.
+    ```
+    *   `--advertise-addr` est l'IP et le port que les autres nœuds doivent utiliser pour se connecter à ce manager.
+    *   `--listen-addr` vous permet de spécifier sur quelle IP et quel port vous voulez écouter pour le trafic du swarm.
+    Le port par défaut du mode Swarm est 2377.
+
+2.  Listez les nœuds dans le swarm.
+    ```shell
+    $ docker node ls
+    ID                  HOSTNAME    STATUS    AVAILABILITY   MANAGER STATUS
+    d21...qzkx *        mgr1        Ready     Active         Leader
+    ```
+    Notez que `mgr1` est actuellement le seul nœud et est listé comme le **Leader**.
+
+3.  Depuis `mgr1`, exécutez la commande `docker swarm join-token` pour extraire les commandes et les jetons requis pour ajouter de nouveaux workers et managers.
+    ```shell
+    $ docker swarm join-token worker
+    To add a worker to this swarm, run the following command:
+    docker swarm join --token SWMTKN-1-0uahebax...c87tu8dx2c 10.0.0.1:2377
+
+    $ docker swarm join-token manager
+    To add a manager to this swarm, run the following command:
+    docker swarm join --token SWMTKN-1-0uahebax...ue4hv6ps3p 10.0.0.1:2377
+    ```
+
+4.  Connectez-vous à `wrk1` et joignez-le au swarm en utilisant la commande `docker swarm join` avec le jeton pour les workers.
+    ```shell
+    $ docker swarm join \
+    --token SWMTKN-1-0uahebax...c87tu8dx2c \
+    10.0.0.1:2377 \
+    --advertise-addr 10.0.0.4:2377 \
+    --listen-addr 10.0.0.4:2377
+    This node joined a swarm as a worker.
+    ```
+
+5.  Répétez l'étape précédente sur `wrk2` et `wrk3`.
+
+6.  Connectez-vous à `mgr2` et joignez-le au swarm en tant que manager en utilisant le jeton pour les managers.
+
+7.  Répétez l'étape précédente sur `mgr3`.
+
+8.  Listez les nœuds dans le swarm en exécutant `docker node ls` depuis n'importe quel manager.
+    ```shell
+    $ docker node ls
+    ID                  HOSTNAME    STATUS    AVAILABILITY   MANAGER STATUS
+    0g4rl...babl8 *     mgr2        Ready     Active         Reachable
+    2xlti...l0nyp       mgr3        Ready     Active         Reachable
+    8yv0b...wmr67       wrk1        Ready     Active
+    9mzwf...e4m4n       wrk3        Ready     Active
+    d21ly...9qzkx       mgr1        Ready     Active         Leader
+    e62gf...l5wt6       wrk2        Ready     Active
+    ```
+    Félicitations ! Vous venez de créer un swarm de 6 nœuds.
+
+##### Haute disponibilité (HA) des managers de Swarm
+
+Les managers de Swarm ont un support natif pour la haute disponibilité (HA). Cela signifie qu'un ou plusieurs peuvent tomber en panne et les survivants maintiendront le swarm en fonctionnement.
+
+Techniquement, le mode Swarm implémente une forme de HA multi-manager **active-passive**. Cela signifie que même si vous avez plusieurs managers, un seul d'entre eux est jamais considéré comme actif. Nous appelons ce manager actif le **leader**.
+
+Swarm utilise une implémentation de l'algorithme de consensus **Raft** pour la HA des managers, et les deux meilleures pratiques suivantes s'appliquent :
+1.  Déployez un nombre **impair** de managers.
+2.  Ne déployez pas trop de managers (3 ou 5 est recommandé).
+
+Avoir un nombre impair de managers augmente les chances d'atteindre le quorum et d'éviter un *split-brain*.
+*(Figure 9.4)*
+
+##### Services
+
+Les services sont la façon de déclarer l'état souhaité pour un service d'application et de le fournir à Docker. Nous créons un service avec la commande `docker service create`.
+
+```shell
+$ docker service create --name web-fe \
+-p 8080:8080 \
+--replicas 5 \
+nigelpoulton/pluralsight-docker-ci
+z7ovearqmruwk0u2vc5o7ql0p
+```
+*   `--name` nomme le service `web-fe`.
+*   `-p 8080:8080` mappe le port 8080 sur chaque nœud du swarm au port 8080 à l'intérieur de chaque conteneur (tâche) du service.
+*   `--replicas 5` indique à Docker qu'il doit toujours y avoir 5 tâches/conteneurs dans le service.
+
+Le swarm exécute une **boucle de réconciliation** qui compare constamment l'état réel du service à l'état souhaité. Si un nœud tombe en panne, le swarm démarrera une nouvelle tâche pour ramener l'état réel en ligne avec l'état souhaité.
+
+*   `docker service ls` pour voir une liste de tous les services.
+*   `docker service ps <nom-service>` pour voir une liste des tâches dans un service.
+*   `docker service inspect --pretty <nom-service>` pour des informations détaillées.
+
+##### Mettre à l'échelle un service
+
+Utilisez `docker service scale` pour mettre à l'échelle un service.
+
+```shell
+$ docker service scale web-fe=10
+web-fe scaled to 10
+```
+
+Le planificateur (*scheduler*) de Swarm essaie de répartir les tâches aussi équitablement que possible entre les nœuds.
+
+##### Supprimer un service
+
+Utilisez `docker service rm` pour supprimer un service. Soyez prudent, car il supprime toutes les tâches sans demander de confirmation.
+
+```shell
+$ docker service rm web-fe
+```
+
+##### Mises à jour progressives (*Rolling updates*)
+
+Pour voir cela, nous allons déployer un nouveau service. Mais d'abord, nous allons créer un nouveau réseau **overlay**.
+
+```shell
+$ docker network create -d overlay uber-net
+```
+Un réseau overlay crée un nouveau réseau de couche 2 pour les conteneurs, qui fonctionne même si les hôtes Docker sont sur des réseaux sous-jacents différents.
+*(Figure 9.5)*
+
+Créons un nouveau service sur ce réseau.
+
+```shell
+$ docker service create --name uber-svc \
+--network uber-net \
+-p 80:80 --replicas 12 \
+nigelpoulton/tu-demo:v1
+```
+
+Ouvrez un navigateur web sur l'adresse IP de n'importe quel nœud du swarm sur le port 80 pour voir l'application.
+*(Figure 9.6)*
+
+Maintenant, supposons qu'une nouvelle version de l'image (`v2`) soit disponible. Utilisons `docker service update` pour la déployer de manière progressive.
+
+```shell
+$ docker service update \
+--image nigelpoulton/tu-demo:v2 \
+--update-parallelism 2 \
+--update-delay 20s uber-svc
+```
+*   `--image` spécifie la nouvelle image.
+*   `--update-parallelism 2` met à jour 2 tâches à la fois.
+*   `--update-delay 20s` attend 20 secondes entre chaque lot.
+
+Félicitations. Vous venez de pousser une mise à jour progressive vers une application conteneurisée en direct.
+
+##### Nettoyage
+
+Nettoyons notre service.
+
+```shell
+$ docker service rm uber-svc
+$ docker network rm uber-net
+```
+
+#### Mode Swarm - Les commandes
+
+*   `docker swarm init` est la commande qui initialise un nouveau swarm et fait du nœud actuel le premier manager. Elle fait également passer le nœud en mode Swarm.
+*   `docker swarm join` est utilisé pour joindre un nœud à un swarm existant en tant que manager ou worker. Le jeton de jonction (*join token*) que vous utilisez détermine si le nœud rejoint en tant que manager ou worker.
+*   `docker swarm join-token` est utilisé pour récupérer la commande et le jeton nécessaires pour joindre de nouveaux managers et workers au swarm.
+*   `docker node ls` liste tous les nœuds dans un swarm.
+*   `docker service create` est utilisé pour créer un nouveau service. Il prend de nombreuses options, y compris le nom du service, l'image à utiliser, le nombre de répliques, les ports à publier, et plus encore.
+*   `docker service ls` liste tous les services fonctionnant sur le swarm.
+*   `docker service ps` liste toutes les tâches (conteneurs) dans un service.
+*   `docker service scale` est utilisé pour augmenter ou diminuer le nombre de tâches dans un service.
+*   `docker service update` est utilisé pour effectuer des mises à jour sur un service existant. Un cas d'utilisation courant est de pousser une nouvelle version d'une image vers un service en cours d'exécution.
+*   `docker service rm` supprime un service et toutes ses tâches.
+*   `docker network create -d overlay` est utilisé pour créer un nouveau réseau overlay qui peut être utilisé par les services pour permettre la communication entre les conteneurs s'exécutant sur différents hôtes du swarm.
+
+### Résumé du chapitre
+
+Dans ce chapitre, nous avons appris ce qu'est l'orchestration et comment le mode Swarm de Docker la rend simple.
+
+Nous avons initialisé un nouveau swarm, ce qui a fait passer le premier nœud en mode Swarm et en a fait le premier manager et leader. Nous avons ensuite ajouté des workers et des managers supplémentaires au swarm.
+
+Nous avons appris que les managers maintiennent l'état du swarm et que l'un d'eux est élu leader. Nous avons également vu que nous devrions déployer un nombre impair de managers pour la haute disponibilité.
+
+Nous avons appris que les services sont le moyen de déclarer l'état souhaité d'une application. Le swarm exécute une boucle de réconciliation qui garantit que l'état réel correspond toujours à l'état souhaité.
+
+Nous avons vu comment le mode Swarm gère la sécurité par défaut avec TLS, et nous avons déployé un service simple, l'avons mis à l'échelle, puis l'avons supprimé.
+
+Nous avons terminé en déployant un nouveau service et en effectuant une mise à jour progressive (*rolling update*) vers une nouvelle version de l'image.
+
+### 10 : La mise en réseau overlay de Docker
+
+La mise en réseau des conteneurs est de plus en plus importante. Surtout dans les environnements de production.
+
+Dans ce chapitre, nous couvrirons les principes fondamentaux de la mise en réseau overlay native de Docker telle qu'implémentée dans un cluster Docker Swarm.
+
+Au moment de la rédaction de cette révision du livre, la mise en réseau Docker sur Windows a beaucoup progressé. Les exemples que nous utiliserons dans ce chapitre fonctionneront tous aussi bien sur Windows que sur Linux.
+
+Nous diviserons ce chapitre en trois parties habituelles :
+
+*   Le TL;DR
+*   L'analyse approfondie
+*   Les commandes
+
+Allons faire un peu de magie réseau !
+
+#### La mise en réseau overlay de Docker - Le TL;DR
+
+Dans le monde réel, il est vital que les conteneurs puissent communiquer entre eux de manière fiable et sécurisée, même lorsqu'ils se trouvent sur des hôtes différents sur des réseaux différents. C'est là que la mise en réseau overlay entre en jeu. Elle vous permet de créer un réseau plat et sécurisé de couche 2 s'étendant sur plusieurs hôtes, auquel les conteneurs peuvent se connecter. Les conteneurs sur ce réseau peuvent alors communiquer directement.
+
+Docker offre une mise en réseau overlay native qui est simple à configurer et sécurisée par défaut.
+
+En coulisses, la mise en réseau Docker est composée de `libnetwork` et de pilotes (*drivers*). `Libnetwork` est l'implémentation canonique du Container Network Model (CNM) et les pilotes sont des composants enfichables qui implémentent différentes technologies et topologies de réseau. Docker propose des pilotes natifs tels que le pilote `overlay`, et des tiers proposent également des pilotes.
+
+#### La mise en réseau overlay de Docker - L'analyse approfondie
+
+En mars 2015, Docker, Inc. a acquis la startup de mise en réseau de conteneurs SocketPlane. Deux des raisons derrière cette acquisition étaient d'apporter une véritable mise en réseau à Docker, et de rendre la mise en réseau des conteneurs si simple que même les développeurs pourraient le faire :-P
+
+Ils font de grands progrès sur les deux fronts.
+
+Mais derrière les commandes réseau simples se cachent de nombreuses pièces mobiles. Le genre de choses que vous devez comprendre avant de faire des déploiements en production et de tenter de résoudre des problèmes !
+
+Le reste de ce chapitre sera divisé en deux parties :
+
+*   **Partie 1 :** nous construirons et testerons un réseau overlay Docker en mode Swarm.
+*   **Partie 2 :** nous expliquerons la théorie derrière son fonctionnement.
+
+##### Construire et tester un réseau overlay Docker en mode Swarm
+
+Pour les exemples suivants, nous utiliserons deux hôtes Docker sur deux réseaux de couche 2 distincts connectés par un routeur, comme le montre la Figure 10.1.
+*(Figure 10.1)*
+
+Vous pouvez suivre avec des hôtes Docker Linux ou Windows. Linux devrait avoir un noyau Linux 4.4 (plus récent est toujours mieux) et Windows devrait être Windows Server 2016 avec les derniers correctifs installés. Les exemples du livre ont été testés avec Docker 17.05 sur Linux et 17.03 sur Windows.
+
+**Construire un swarm**
+
+La première chose que nous ferons est de configurer les deux hôtes en un Swarm à deux nœuds. Nous exécuterons la commande `docker swarm init` sur `node1` pour en faire un manager, puis nous exécuterons la commande `docker swarm join` sur `node2` pour en faire un worker.
+
+> **Avertissement :** Si vous suivez dans votre propre laboratoire, vous devrez remplacer les adresses IP, les ID de conteneurs, les jetons, etc., par les valeurs correctes pour votre environnement.
+
+Exécutez la commande suivante sur `node1`.
+```shell
+$ docker swarm init \
+--advertise-addr=172.31.1.5 \
+--listen-addr=172.31.1.5:2377
+Swarm initialized: current node (1ex3...o3px) is now a manager.
+To add a worker to this swarm, run the following command:
+docker swarm join \
+--token SWMTKN-1-0hz2ec...2vye \
+172.31.1.5:2377
+```
+
+Exécutez la commande suivante sur `node2`. Pour que cette commande fonctionne sur Windows Server, vous devrez peut-être modifier vos règles de pare-feu pour autoriser les ports 2377/tcp, 7946/tcp et 7946/udp.
+```shell
+$ docker swarm join \
+--token SWMTKN-1-0hz2ec...2vye \
+172.31.1.5:2377
+This node joined a swarm as a worker.
+```
+Nous avons maintenant un Swarm à deux nœuds où `node1` est un manager et `node2` est un worker.
+
+**Créer un nouveau réseau overlay**
+
+Maintenant, créons un nouveau réseau overlay appelé `uber-net`. Exécutez la commande suivante depuis `node1`. Pour que cela fonctionne sur Windows, vous devrez peut-être ajouter une règle pour le port 4789/udp sur vos hôtes Docker Windows.
+```shell
+$ docker network create -d overlay uber-net
+c740ydi1lm89khn5kd52skrd9
+```
+C'est tout ! Vous venez de créer un tout nouveau réseau overlay disponible pour tous les hôtes du swarm et dont le plan de contrôle est chiffré avec TLS ! Si vous voulez chiffrer le plan de données, vous pouvez simplement ajouter l'option `-o encrypted` à la commande.
+
+Vous pouvez lister tous les réseaux sur chaque nœud avec la commande `docker network ls`.
+```shell
+$ docker network ls
+NETWORK ID          NAME                DRIVER              SCOPE
+ddac4ff813b7        bridge              bridge              local
+389a7e7e8607        docker_gwbridge     bridge              local
+a09f7e6b2ac6        host                host                local
+ehw16ycy980s        ingress             overlay             swarm
+2b26c11d3469        none                null                local
+c740ydi1lm89        uber-net            overlay             swarm
+```
+Le réseau que nous avons créé est en bas de la liste. Si vous exécutez `docker network ls` sur `node2`, vous remarquerez qu'il ne peut pas voir le réseau `uber-net`. C'est parce que les nouveaux réseaux overlay ne sont rendus disponibles aux nœuds workers que lorsqu'ils exécutent des conteneurs attachés à cet overlay.
+
+**Attacher un service au réseau overlay**
+
+Créons un nouveau service Docker et attachons-le au réseau `uber-net`. Nous créerons le service avec deux répliques pour qu'une s'exécute sur `node1` et l'autre sur `node2`.
+
+Exemple Linux :
+```shell
+$ docker service create --name test \
+--network uber-net \
+--replicas 2 \
+ubuntu sleep infinity
+```
+Exemple Windows :
+```powershell
+> docker service create --name test `
+--network uber-net `
+--replicas 2 `
+microsoft\powershell:nanoserver Start-Sleep 3600
+```
+Vérifiez l'opération avec `docker service ps`.
+```shell
+$ docker service ps test
+ID                  NAME                IMAGE               NODE                DESIRED STATE       CURRENT STATE
+77q...rkx           test.1              ubuntu              node1               Running             Running
+97v...pa5           test.2              ubuntu              node2               Running             Running
+```
+Félicitations ! Vous avez créé un nouveau réseau overlay s'étendant sur deux nœuds sur des réseaux sous-jacents distincts, et vous y avez planifié deux conteneurs.
+*(Figure 10.2)*
+
+**Tester le réseau overlay**
+
+Maintenant, testons le réseau overlay avec la commande `ping`. Pour ce faire, nous devons trouver l'adresse IP de chaque conteneur.
+
+Exécutez `docker network inspect` pour voir le sous-réseau assigné à l'overlay.
+```shell
+$ docker network inspect uber-net
+...
+"Subnet": "10.0.0.0/24",
+"Gateway": "10.0.0.1"
+...
+```
+Le sous-réseau est `10.0.0.0/24`.
+
+Exécutez les deux commandes suivantes sur `node1` et `node2` pour obtenir les ID des conteneurs et leurs adresses IP.
+```shell
+$ docker container ls
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS
+396c8b142a85        ubuntu:latest       "sleep infinity"    2 hours ago         Up 2 hours
+$
+$ docker container inspect \
+--format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' 396c8b142a85
+10.0.0.3
+```
+Assurez-vous d'exécuter ces commandes sur les deux nœuds. Disons que le conteneur sur `node1` a l'IP `10.0.0.3` et celui sur `node2` a l'IP `10.0.0.4`.
+*(Figure 10.3)*
+
+Connectez-vous au conteneur sur `node1` et pinguez le conteneur distant. Pour l'exemple Linux, vous devrez installer l'utilitaire `ping`.
+
+Exemple Linux :
+```shell
+$ docker container exec -it 396c8b142a85 bash
+root@396c8b142a85:/# apt-get update && apt-get install iputils-ping
+...
+root@396c8b142a85:/# ping 10.0.0.4
+PING 10.0.0.4 (10.0.0.4) 56(84) bytes of data.
+64 bytes from 10.0.0.4: icmp_seq=1 ttl=64 time=1.06 ms
+...
+```
+Exemple Windows :
+```powershell
+> docker container exec -it 1a4f29e5a4b6 PowerShell.exe
+PS C:\> ping 10.0.0.4
+Pinging 10.0.0.4 with 32 bytes of data:
+Reply from 10.0.0.4: bytes=32 time=1ms TTL=128
+...
+```
+Comme montré ci-dessus, le conteneur sur `node1` peut pinguer le conteneur sur `node2` en utilisant le réseau overlay.
+
+##### La théorie derrière tout ça
+
+**Introduction à VXLAN**
+
+Avant tout, la mise en réseau overlay de Docker utilise des **tunnels VXLAN** pour créer des réseaux overlay virtuels de couche 2. Au plus haut niveau, les VXLAN vous permettent de créer un réseau virtuel de couche 2 par-dessus une infrastructure de couche 3 existante.
+*(Figure 10.4)*
+
+Pour créer le réseau overlay, un tunnel VXLAN est créé à travers l'infrastructure IP de couche 3 sous-jacente (*underlay network*). Chaque extrémité du tunnel VXLAN est terminée par un **VTEP** (VXLAN Tunnel Endpoint). C'est ce VTEP qui effectue l'encapsulation/décapsulation.
+*(Figure 10.5)*
+
+**Explication de notre exemple à deux conteneurs**
+
+Pour accomplir cela, un nouvel **espace de noms réseau** (*network namespace*) a été créé sur chaque hôte. Un commutateur virtuel (`Br0`) est créé à l'intérieur de l'espace de noms réseau. Un VTEP est également créé avec une extrémité connectée au commutateur `Br0` et l'autre connectée à la pile réseau de l'hôte, obtenant une adresse IP sur le réseau sous-jacent. Les deux VTEP sur chaque hôte créent l'overlay via un tunnel VXLAN.
+*(Figure 10.6)*
+
+Chaque conteneur obtient ensuite sa propre interface Ethernet virtuelle (`veth`) qui est également connectée au commutateur `Br0` local. La topologie ressemble maintenant à la Figure 10.7.
+*(Figure 10.7)*
+
+**Exemple de communication**
+
+Lorsque le conteneur C1 (sur `node1`) pingue C2 (sur `node2`), le paquet est envoyé au commutateur `Br0`. Le commutateur apprend où envoyer le paquet grâce à une réponse ARP proxy du VTEP. Le VTEP sait où se trouve C2 car les détails réseau de tous les nouveaux conteneurs sont propagés aux autres nœuds du swarm en utilisant le protocole de bavardage (*gossip protocol*) intégré au réseau.
+
+Le VTEP encapsule la trame Ethernet dans un paquet IP/UDP. L'en-tête VXLAN contient le **VNID** (VXLAN Network ID) pour maintenir l'isolation du réseau. Le paquet est ensuite envoyé à travers le réseau sous-jacent vers le VTEP de `node2`. Le VTEP de destination décapsule le paquet et le transmet à son commutateur `Br0` local, qui le livre au conteneur C2.
+*(Figure 10.8)*
+
+C'est ainsi que la technologie VXLAN est exploitée par les réseaux overlay natifs de Docker.
+
+#### La mise en réseau overlay de Docker - Les commandes
+
+*   `docker network create` est la commande que nous utilisons pour créer un nouveau réseau de conteneurs. L'option `-d` vous permet de spécifier le pilote à utiliser, le plus courant étant le pilote `overlay`. Le plan de contrôle est chiffré par défaut. Pour chiffrer le plan de données, ajoutez simplement l'option `-o encrypted`.
+*   `docker network ls` liste tous les réseaux de conteneurs visibles par un hôte Docker.
+*   `docker network inspect` vous montre des informations détaillées sur un réseau de conteneurs particulier.
+*   `docker network rm` supprime un réseau.
+
+### Résumé du chapitre
+
+Dans ce chapitre, nous avons vu la simplicité de la création de nouveaux réseaux overlay Docker en utilisant la commande `docker network create`. Nous avons ensuite appris comment ils sont créés en coulisses en utilisant la technologie VXLAN. Cela n'effleure que la surface de ce que vous pouvez faire avec la mise en réseau overlay native de Docker.
+
+### 11 : La sécurité dans Docker
+
+Une bonne sécurité est une question de couches, et Docker a beaucoup de couches. Il prend en charge toutes les principales technologies de sécurité Linux, en plus d'avoir beaucoup des siennes - et la plupart d'entre elles sont simples et faciles à configurer.
+
+Dans ce chapitre, nous examinerons certaines des technologies qui rendent l'exécution de conteneurs sur Docker très sécurisée.
+
+Lorsque nous arriverons à la partie d'analyse approfondie du chapitre, nous diviserons les choses en deux catégories :
+*   Technologies de sécurité Linux
+*   Technologies de sécurité de la plateforme Docker
+
+> **Note :** De grandes parties de ce chapitre sont spécifiques à Linux. Cependant, la section sur les technologies de sécurité de la plateforme Docker est indépendante de la plateforme et s'applique également à Linux et à Windows.
+
+#### La sécurité dans Docker - Le TL;DR
+
+La sécurité est une question de couches ! Plus vous avez de couches de sécurité, plus vous êtes en sécurité. Eh bien... Docker offre beaucoup de couches de sécurité. La Figure 11.1 montre certaines des technologies de sécurité que nous aborderons dans le chapitre.
+*(Figure 11.1)*
+
+Docker sur Linux exploite la plupart des technologies de sécurité Linux courantes. Celles-ci incluent les **espaces de noms (namespaces)**, les **groupes de contrôle (cgroups)**, les **capacités (capabilities)**, les systèmes de **contrôle d'accès obligatoire (MAC)** et **seccomp**. Pour chacun, Docker implémente des valeurs par défaut judicieuses pour une expérience prête à l'emploi transparente et modérément sécurisée. Cependant, il vous permet également de personnaliser chacun d'eux selon vos besoins spécifiques.
+
+La plateforme Docker elle-même offre d'excellentes technologies de sécurité natives. Et l'une des meilleures choses à leur sujet est qu'elles sont incroyablement simples à utiliser !
+
+*   Le **Mode Swarm de Docker** est sécurisé par défaut. Vous obtenez tout ce qui suit sans aucune configuration requise ; ID de nœud cryptographiques, authentification mutuelle, configuration automatique de l'AC (Autorité de Certification), rotation automatique des certificats, magasin de cluster chiffré, réseaux chiffrés, et plus encore.
+*   **Docker Content Trust (DCT)** vous permet de signer vos images et de vérifier l'intégrité et l'éditeur des images que vous téléchargez.
+*   **Docker Security Scanning** analyse les images Docker, détecte les vulnérabilités connues et vous fournit un rapport détaillé.
+*   Les **secrets Docker** font des secrets des citoyens de première classe dans l'écosystème Docker. Ils sont stockés dans le magasin de cluster chiffré, chiffrés en transit lorsqu'ils sont livrés aux conteneurs, et stockés dans des systèmes de fichiers en mémoire lorsqu'ils sont utilisés.
+
+L'important à savoir est que Docker fonctionne avec les principales technologies de sécurité Linux tout en fournissant son propre ensemble étendu et croissant de technologies de sécurité. Bien que les technologies de sécurité Linux puissent être un peu compliquées à configurer, les technologies de sécurité de la plateforme Docker sont très simples.
+
+#### La sécurité dans Docker - L'analyse approfondie
+
+Nous savons tous que la sécurité est importante. Nous savons aussi que la sécurité peut être compliquée et ennuyeuse !
+
+Lorsque Docker a décidé d'intégrer la sécurité au cœur de sa plateforme, il a décidé de la rendre simple et facile. Ils savaient que si la sécurité était difficile à configurer, les gens ne l'utiliseraient pas. Par conséquent, la plupart des technologies de sécurité offertes par la plateforme Docker sont simples à utiliser. Elles sont également livrées avec des valeurs par défaut judicieuses - cela signifie que vous obtenez une plateforme assez sécurisée sans effort. Bien sûr, les valeurs par défaut ne sont pas parfaites, mais elles sont généralement suffisantes pour vous donner un départ sûr. Si elles ne répondent pas à vos besoins, vous pouvez toujours les personnaliser.
+
+Nous organiserons le reste de ce chapitre comme suit :
+*   **Technologies de sécurité Linux**
+    *   Espaces de noms (Namespaces)
+    *   Groupes de Contrôle (Control Groups)
+    *   Capacités (Capabilities)
+    *   Contrôle d'Accès Obligatoire (Mandatory Access Control)
+    *   seccomp
+*   **Technologies de sécurité de la plateforme Docker**
+    *   Mode Swarm
+    *   Docker Security Scanning
+    *   Docker Content Trust
+    *   Secrets Docker
+
+##### Technologies de sécurité Linux
+
+Toutes les bonnes plateformes de conteneurs devraient utiliser les espaces de noms et les cgroups pour construire des conteneurs. Les meilleures plateformes de conteneurs s'intégreront également avec d'autres technologies de sécurité Linux telles que les capacités, les systèmes de Contrôle d'Accès Obligatoire comme SELinux et AppArmor, et seccomp. Comme prévu, Docker s'intègre avec toutes !
+
+**Espaces de noms (Namespaces)**
+
+Les espaces de noms du noyau sont au cœur même des conteneurs ! Ils nous permettent de découper un système d'exploitation (SE) pour qu'il ait l'apparence et la convivialité de plusieurs systèmes d'exploitation isolés.
+
+Un conteneur Docker est une collection organisée d'espaces de noms.
+*(Figure 11.3)*
+
+Docker sur Linux utilise actuellement les espaces de noms de noyau suivants :
+*   **Process ID (pid)** : Fournit des arborescences de processus isolées pour chaque conteneur.
+*   **Network (net)** : Fournit à chaque conteneur sa propre pile réseau isolée (interfaces, adresses IP, plages de ports, tables de routage).
+*   **Filesystem/mount (mnt)** : Chaque conteneur obtient son propre système de fichiers racine `/` unique et isolé.
+*   **Inter-process Communication (ipc)** : Pour l'accès à la mémoire partagée à l'intérieur d'un conteneur, isolé de l'extérieur.
+*   **User (user)** : Permet de mapper les utilisateurs à l'intérieur d'un conteneur à des utilisateurs différents sur l'hôte Linux.
+*   **UTS (uts)** : Fournit à chaque conteneur son propre nom d'hôte.
+
+**Groupes de Contrôle (Control Groups)**
+
+Si les espaces de noms concernent l'isolation, les groupes de contrôle (cgroups) concernent la fixation de limites. Les conteneurs sont isolés les uns des autres mais partagent tous un ensemble commun de ressources du SE - comme le CPU, la RAM et les E/S disque. Les cgroups nous permettent de fixer des limites sur chacun d'eux afin qu'un seul conteneur ne puisse pas utiliser toutes les ressources de l'hôte Linux.
+
+**Capacités (Capabilities)**
+
+Il est déconseillé d'exécuter des conteneurs en tant que `root`. Ce dont nous avons besoin, c'est d'une technologie qui nous permette de choisir les pouvoirs de `root` dont nos conteneurs ont besoin pour fonctionner. Entrez les **capacités** !
+
+Le compte `root` de Linux est composé d'une longue liste de capacités. Docker travaille avec les capacités pour que vous puissiez exécuter des conteneurs en tant que `root`, mais en supprimant les capacités de `root` dont vous n'avez pas besoin. Par exemple, si le seul privilège `root` dont votre conteneur a besoin est la capacité de se lier à des ports réseau de bas numéro, vous devriez démarrer un conteneur en supprimant toutes les capacités de `root`, puis en rajoutant la capacité `CAP_NET_BIND_SERVICE`.
+
+**Systèmes de Contrôle d'Accès Obligatoire (MAC)**
+
+Docker fonctionne avec les principales technologies MAC de Linux telles qu'AppArmor et SELinux. Selon votre distribution Linux, Docker applique un profil AppArmor par défaut à tous les nouveaux conteneurs.
+
+**seccomp**
+
+Docker utilise `seccomp`, en mode filtre, pour limiter les appels système (*syscalls*) qu'un conteneur peut faire au noyau de l'hôte. Tous les nouveaux conteneurs obtiennent un profil `seccomp` par défaut configuré avec des valeurs judicieuses.
+
+##### Technologies de sécurité de la plateforme Docker
+
+**Sécurité en Mode Swarm**
+
+Le Mode Swarm inclut de nombreuses fonctionnalités de sécurité activées par défaut. Celles-ci incluent :
+*   ID de nœud cryptographiques
+*   Authentification mutuelle via TLS
+*   Jetons de jonction sécurisés
+*   Configuration de l'AC (Autorité de Certification) avec rotation automatique des certificats
+*   Magasin de cluster chiffré (base de données de configuration)
+*   Réseaux chiffrés
+
+*Démonstration de la configuration d'un Swarm sécurisé...*
+*(Les étapes de la section "Configure a secure Swarm" sont une démonstration pratique et sont laissées en anglais dans les commandes, mais expliquées en français)*
+
+1.  **Initialiser le Swarm :** `docker swarm init` sur `mgr1`. Cela configure un Swarm sécurisé à un nœud, `mgr1` devenant le manager et l'AC racine.
+2.  **Joindre un manager supplémentaire :** `docker swarm join-token manager` sur `mgr1` pour obtenir le jeton, puis `docker swarm join --token ...` sur `mgr2`.
+3.  **Joindre un worker :** `docker swarm join-token worker` sur un manager pour obtenir le jeton, puis `docker swarm join --token ...` sur `wrk1`.
+
+*En coulisses de la sécurité du Swarm...*
+
+*   **Jetons de jonction (Join tokens) :** Le seul élément nécessaire pour joindre un Swarm est le jeton pertinent. Gardez-les en sécurité ! Ils sont stockés dans le magasin de cluster chiffré. Vous pouvez les renouveler avec `docker swarm join-token --rotate`.
+*   **TLS et authentification mutuelle :** Chaque nœud qui rejoint un Swarm reçoit un certificat client. Ce certificat est utilisé pour l'authentification mutuelle et identifie le nœud, son Swarm et son rôle (manager ou worker). Les informations sont stockées dans les champs O (ID du Swarm), OU (rôle du nœud) et CN (ID du nœud) du certificat.
+*   **Configuration de l'AC :** Vous pouvez configurer la période de rotation des certificats avec `docker swarm update --cert-expiry ...`.
+*   **Magasin de cluster (Cluster store) :** C'est le cerveau d'un Swarm, où la configuration et l'état sont stockés. Il est basé sur une implémentation d'etcd, répliqué sur tous les managers et chiffré par défaut.
+
+**Détection des vulnérabilités avec Docker Security Scanning**
+
+Docker Security Scanning effectue des analyses au niveau binaire des images Docker et vérifie les logiciels qu'elles contiennent par rapport à des bases de données de vulnérabilités connues (bases de données CVE). Un rapport détaillé est ensuite disponible. C'est disponible pour les dépôts privés sur Docker Hub et dans le cadre de Docker Enterprise Edition. Toutes les images officielles de Docker sont scannées.
+*(Figures 11.11 et 11.12 montrant les rapports de scan sur Docker Hub)*
+
+**Signature et vérification des images avec Docker Content Trust**
+
+Docker Content Trust (DCT) permet de vérifier facilement l'intégrité et l'éditeur des images que vous téléchargez. À un niveau élevé, DCT permet aux développeurs de signer leurs images lorsqu'elles sont poussées vers Docker Hub ou Docker Trusted Registry. Il vérifiera également automatiquement les images lorsqu'elles sont téléchargées.
+*(Figure 11.13)*
+
+Pour activer DCT, il suffit d'exporter une variable d'environnement : `export DOCKER_CONTENT_TRUST=1`.
+
+Une fois DCT activé, vous ne pourrez plus télécharger et travailler avec des images non signées. DCT vous empêchera également de télécharger des images qui ont été altérées ou qui sont obsolètes.
+![image58](https://github.com/user-attachments/assets/cf6cdb5f-630c-402d-9112-4d05af92a682)<p align="center">Figures 11.15</p>
+![image59](https://github.com/user-attachments/assets/49d7eb8e-0801-4919-884c-5cd382149ad2)<p align="center">Figures 11.16</p>
+![image60](https://github.com/user-attachments/assets/b4e26eb6-3727-4989-b574-6da855124f5e)<p align="center">Figures 11.17</p>
+
+**Secrets Docker**
+
+Avant Docker 1.13, il n'y avait pas de moyen standard de rendre les secrets (mots de passe, certificats TLS, etc.) disponibles pour les applications de manière sécurisée.
+
+Docker 1.13 a introduit les **Secrets Docker**. Les secrets sont chiffrés au repos, chiffrés en transit, montés dans des systèmes de fichiers en mémoire (`tmpfs`), et ne sont disponibles que pour les services/conteneurs qui y ont explicitement été autorisés.
+![Figures 11.18](https://github.com/user-attachments/assets/1ba171e4-d59d-4a8b-aabf-13f3b13ab620)<p align="center">Figures 11.18</p>
+
+Le flux de travail est le suivant :
+1.  Le secret est créé et envoyé au Swarm.
+2.  Il est stocké dans le magasin de cluster chiffré.
+3.  Un service est créé et le secret lui est attaché.
+4.  Le secret est chiffré en transit lors de sa livraison aux conteneurs du service.
+5.  Le secret est monté dans les conteneurs du service en tant que fichier non chiffré dans `/run/secrets/`. C'est un système de fichiers `tmpfs` en mémoire.
+6.  Une fois que le conteneur termine, le système de fichiers en mémoire est détruit.
+
+### Résumé du chapitre
+
+Docker peut être configuré pour être extrêmement sécurisé. Il prend en charge toutes les principales technologies de sécurité Linux. En plus de cela, la plateforme Docker inclut son propre ensemble de technologies de sécurité. Le Mode Swarm est construit sur TLS. Security Scanning trouve les vulnérabilités. Docker Content Trust vous permet de signer et de vérifier le contenu. Et les secrets sont désormais des citoyens de première classe dans Docker.
+
+Le résultat net est que votre environnement Docker peut être configuré pour être aussi sécurisé ou non sécurisé que vous le désirez - tout dépend de la façon dont vous le configurez.
