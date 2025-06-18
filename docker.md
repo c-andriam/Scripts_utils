@@ -1838,8 +1838,7 @@ Allons découvrir les conteneurs !
 
 Un conteneur est l'instance d'exécution d'une image. De la même manière que nous pouvons démarrer une machine virtuelle (VM) à partir d'un modèle de machine virtuelle, nous démarrons un ou plusieurs conteneurs à partir d'une seule image. La grande différence entre une VM et un conteneur est que les conteneurs sont plus rapides et plus légers - au lieu d'exécuter un système d'exploitation complet comme une VM, les conteneurs partagent le SE/noyau avec l'hôte sur lequel ils s'exécutent.
 
-La Figure 7.1 montre une seule image Docker utilisée pour démarrer plusieurs conteneurs Docker.
-*(Figure 7.1)*
+La Figure 7.1 montre une seule image Docker utilisée pour démarrer plusieurs conteneurs Docker.![image21](https://github.com/user-attachments/assets/48b8486c-1525-4ebc-a067-4cb2648199c1)<p align="center">Figure 7.1</p>
 
 La manière la plus simple de démarrer un conteneur est avec la commande `docker container run`. La commande peut prendre de nombreux arguments, mais dans sa forme la plus basique, vous lui indiquez une image à utiliser et une commande à exécuter : `docker container run <image> <commande>`. La commande suivante démarrera un conteneur Ubuntu Linux exécutant le shell Bash : `docker container run -it ubuntu /bin/bash`. Pour démarrer un conteneur Windows exécutant PowerShell, vous pourriez faire `docker container run -it microsoft/powershell:nanoserver PowerShell.exe`.
 
@@ -1864,13 +1863,11 @@ Les premières choses que nous aborderons ici sont les différences fondamentale
 
 Les conteneurs et les VMs ont tous deux besoin d'un hôte pour fonctionner. Cela peut être n'importe quoi, de votre ordinateur portable à un serveur *bare metal* dans votre centre de données, jusqu'à une instance dans le cloud public. Dans cet exemple, nous supposerons un seul serveur physique sur lequel nous devons exécuter 4 applications métier.
 
-Dans le modèle VM, le serveur physique est allumé et l'hyperviseur démarre (nous sautons le BIOS et le code du chargeur de démarrage, etc.). Une fois que l'hyperviseur a démarré, il s'approprie toutes les ressources physiques du système telles que le CPU, la RAM, le stockage et les cartes réseau (NICs). L'hyperviseur découpe ensuite ces ressources matérielles en versions virtuelles qui ont l'apparence, l'odeur et la sensation exactes de la réalité. Il les empaquette ensuite dans une construction logicielle appelée machine virtuelle (VM). Nous prenons ensuite ces VMs et installons un système d'exploitation et une application sur chacune d'elles. Nous avons dit que nous avions un seul serveur physique et que nous devions exécuter 4 applications, nous créerions donc 4 VMs, installerions 4 systèmes d'exploitation, puis installerions les 4 applications. Une fois terminé, cela ressemble un peu à la Figure 7.2.
-*(Figure 7.2)*
+Dans le modèle VM, le serveur physique est allumé et l'hyperviseur démarre (nous sautons le BIOS et le code du chargeur de démarrage, etc.). Une fois que l'hyperviseur a démarré, il s'approprie toutes les ressources physiques du système telles que le CPU, la RAM, le stockage et les cartes réseau (NICs). L'hyperviseur découpe ensuite ces ressources matérielles en versions virtuelles qui ont l'apparence, l'odeur et la sensation exactes de la réalité. Il les empaquette ensuite dans une construction logicielle appelée machine virtuelle (VM). Nous prenons ensuite ces VMs et installons un système d'exploitation et une application sur chacune d'elles. Nous avons dit que nous avions un seul serveur physique et que nous devions exécuter 4 applications, nous créerions donc 4 VMs, installerions 4 systèmes d'exploitation, puis installerions les 4 applications. Une fois terminé, cela ressemble un peu à la Figure 7.2.![image22](https://github.com/user-attachments/assets/8cdb7bcb-e7fd-43fd-a5bd-b0b395f6dcdd)<p align="center">Figure 7.2</p>
 
 Les choses sont un peu différentes dans le modèle de conteneur.
 
-Lorsque le serveur est allumé, le système d'exploitation de votre choix démarre. Dans le monde de Docker, il peut s'agir de Linux ou d'une version moderne de Windows prenant en charge les primitives de conteneur dans son noyau. Comme pour le modèle VM, le SE s'approprie toutes les ressources matérielles. Par-dessus le SE, nous installons un moteur de conteneur tel que Docker. Le moteur de conteneur prend ensuite les ressources du SE telles que l'arborescence des processus, le système de fichiers et la pile réseau, et les découpe en constructions isolées et sécurisées appelées conteneurs. Chaque conteneur a l'apparence, l'odeur et la sensation d'un véritable SE. À l'intérieur de chaque conteneur, nous pouvons exécuter une application. Comme précédemment, nous supposons un seul serveur physique avec 4 applications. Par conséquent, nous découperions 4 conteneurs et exécuterions une seule application à l'intérieur de chacun, comme le montre la Figure 7.3.
-*(Figure 7.3)*
+Lorsque le serveur est allumé, le système d'exploitation de votre choix démarre. Dans le monde de Docker, il peut s'agir de Linux ou d'une version moderne de Windows prenant en charge les primitives de conteneur dans son noyau. Comme pour le modèle VM, le SE s'approprie toutes les ressources matérielles. Par-dessus le SE, nous installons un moteur de conteneur tel que Docker. Le moteur de conteneur prend ensuite les ressources du SE telles que l'arborescence des processus, le système de fichiers et la pile réseau, et les découpe en constructions isolées et sécurisées appelées conteneurs. Chaque conteneur a l'apparence, l'odeur et la sensation d'un véritable SE. À l'intérieur de chaque conteneur, nous pouvons exécuter une application. Comme précédemment, nous supposons un seul serveur physique avec 4 applications. Par conséquent, nous découperions 4 conteneurs et exécuterions une seule application à l'intérieur de chacun, comme le montre la Figure 7.3.![image23](https://github.com/user-attachments/assets/1b950c46-dc87-480b-9fb2-d8c9118519bb)<p align="center">Figure 7.3</p>
 
 À un niveau élevé, nous pouvons dire que les hyperviseurs effectuent une **virtualisation matérielle** - ils découpent les ressources matérielles physiques en versions virtuelles. D'un autre côté, les conteneurs effectuent une **virtualisation du système d'exploitation** - ils découpent les ressources du SE en versions virtuelles.
 
@@ -2138,8 +2135,7 @@ CONTAINER ID   COMMAND         STATUS         PORTS                  NAMES
 6efa1838cd51   "/bin/sh -c..." Up 2 minutes   0.0.0.0:80->8080/tcp   webserver
 ```
 
-Maintenant que le conteneur est en cours d'exécution et que les ports sont mappés, nous pouvons nous connecter au conteneur en pointant un navigateur web sur l'adresse IP ou le nom DNS de l'hôte Docker sur le port 80.
-*(Figure 7.4)*
+Maintenant que le conteneur est en cours d'exécution et que les ports sont mappés, nous pouvons nous connecter au conteneur en pointant un navigateur web sur l'adresse IP ou le nom DNS de l'hôte Docker sur le port 80.![image29](https://github.com/user-attachments/assets/b7643d2b-856f-46ac-adcc-6e59eee4ac05)<p align="center">Figure 7.4</p>
 
 ##### Inspecter les conteneurs
 
@@ -2232,8 +2228,7 @@ Le processus de conteneurisation d'une application se présente comme suit :
 
 Une fois que votre application est conteneurisée (transformée en image Docker), vous êtes prêt à la distribuer et à l'exécuter en tant que conteneur.
 
-La Figure 8.1 montre le processus de construction, de distribution et d'exécution d'une application (désolé pour les couleurs sur le diagramme).
-*(Figure 8.1)*
+La Figure 8.1 montre le processus de construction, de distribution et d'exécution d'une application (désolé pour les couleurs sur le diagramme).![image24](https://github.com/user-attachments/assets/57fd4d8e-1fd2-46e2-8e5f-5509fc337b3c)<p align="center">Figure 8.1</p>
 
 ### Conteneuriser une App - L'analyse approfondie
 
