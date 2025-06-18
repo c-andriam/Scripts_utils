@@ -1,4 +1,4 @@
-# Docker Deep Dive
+# <p align="center">Docker Deep Dive</p>
 
 ## Avant-propos
 
