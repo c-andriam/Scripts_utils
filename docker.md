@@ -1,20 +1,22 @@
 # Docker Deep Dive
 
-**Pourquoi devrais-je lire ce livre ou m'intéresser à Docker ?**
+## Avant-propos
+
+### Pourquoi devrais-je lire ce livre ou m'intéresser à Docker ?
 
 Docker est incontournable, il est inutile de l'ignorer. Les développeurs l'ont adopté en masse, et les équipes d'exploitation (IT Ops) se doivent d'être à la hauteur ! Nous avons tout intérêt à savoir comment créer et maintenir des applications Docker de qualité professionnelle dans nos environnements de production critiques. Ce livre vous y aidera.
 
-**Docker, n'est-ce pas uniquement pour les développeurs ?**
+### Docker, n'est-ce pas uniquement pour les développeurs ?
 
 Si vous pensez que Docker est seulement destiné aux développeurs, préparez-vous à voir votre monde complètement chamboulé !
 
 Toutes les applications « dockerisées » que les développeurs produisent en série ont besoin d'un endroit pour s'exécuter et de quelqu'un pour les gérer. Si vous pensez que les développeurs vont s'en charger, vous rêvez. Les équipes d'exploitation (Ops) devront construire et faire tourner des infrastructures Docker performantes et hautement disponibles. Si votre travail est axé sur l'exploitation et que vous n'avez pas de compétences sur Docker, vous allez au-devant de grandes difficultés. Mais pas de panique, ce livre est là pour vous former !
 
-**Dois-je acheter le livre si j'ai déjà suivi vos formations vidéo ?**
+### Dois-je acheter le livre si j'ai déjà suivi vos formations vidéo ?
 
 Si vous aimez mes formations vidéo, vous aimerez probablement ce livre. Si vous n'aimez pas mes formations vidéo, vous n'aimerez probablement pas ce livre.
 
-**Comment le livre est-il structuré**
+### Comment le livre est-il structuré
 
 J'ai divisé le livre en deux sections :
 *   La vue d'ensemble
@@ -35,7 +37,7 @@ L'**analyse approfondie** est la partie où nous expliquons le fonctionnement de
 
 La section des **commandes** répertorie toutes les commandes pertinentes dans une liste facile à lire, avec de brefs rappels de leur fonction.
 
-**Les versions du livre**
+### Les versions du livre
 
 Docker évolue à une vitesse fulgurante ! Par conséquent, la valeur d'un livre comme celui-ci est inversement proportionnelle à son ancienneté. Autrement dit, plus ce livre est ancien, moins il a de valeur. C'est pourquoi je le maintiens à jour !
 
@@ -53,9 +55,29 @@ Voici la liste des versions :
 
 **Version 2.** Ajout du chapitre « La sécurité dans Docker ».
 
-# PREMIÈRE PARTIE : LA VUE D'ENSEMBLE
+---
 
-## 1 : Les conteneurs : une vue d'ensemble
+## Table des Matières
+
+*   **[Première Partie : La Vue d'Ensemble](#première-partie--la-vue-densemble)**
+    *   [Chapitre 1 : Les conteneurs : une vue d'ensemble](#chapitre-1--les-conteneurs--une-vue-densemble)
+    *   [Chapitre 2 : Docker](#chapitre-2--docker)
+    *   [Chapitre 3 : Installer Docker](#chapitre-3--installer-docker)
+    *   [Chapitre 4 : Vue d'ensemble](#chapitre-4--vue-densemble)
+*   **[Deuxième Partie : Les Aspects Techniques](#deuxième-partie--les-aspects-techniques)**
+    *   [Chapitre 5 : Le Moteur Docker](#chapitre-5--le-moteur-docker)
+    *   [Chapitre 6 : Les Images](#chapitre-6--les-images)
+    *   [Chapitre 7 : Les Conteneurs](#chapitre-7--les-conteneurs)
+    *   [Chapitre 8 : Conteneuriser une Application](#chapitre-8--conteneuriser-une-application)
+    *   [Chapitre 9 : Le Mode Swarm](#chapitre-9--le-mode-swarm)
+    *   [Chapitre 10 : La mise en réseau overlay de Docker](#chapitre-10--la-mise-en-réseau-overlay-de-docker)
+    *   [Chapitre 11 : La sécurité dans Docker](#chapitre-11--la-sécurité-dans-docker)
+
+---
+
+# Première Partie : La Vue d'Ensemble
+
+## Chapitre 1 : Les conteneurs : une vue d'ensemble
 
 Les conteneurs sont devenus incontournables.
 
@@ -137,7 +159,7 @@ Nous vivions dans un monde où chaque nouvelle application de l'entreprise néce
 
 En parlant de Docker... découvrons maintenant qui, quoi et pourquoi Docker !
 
-## 2 : Docker
+## Chapitre 2 : Docker
 
 Aucun livre ou conversation sur les conteneurs n'est complet sans aborder le sujet de Docker. Mais lorsque quelqu'un dit « Docker », il peut faire référence à au moins trois choses différentes :
 
@@ -260,7 +282,7 @@ Le projet Docker est open source et se trouve dans le dépôt `moby/moby` sur Gi
 
 L'Open Container Initiative (OCI) a joué un rôle déterminant dans la normalisation du format de runtime de conteneur et du format d'image de conteneur.
 
-## 3 : Installer Docker
+## Chapitre 3 : Installer Docker
 
 Il existe une multitude de manières et d'endroits pour installer Docker. Il y a Windows, Mac, et bien sûr Linux. Mais il y a aussi le cloud, les installations sur site (*on-premises*), ou sur votre ordinateur portable. Sans parler des installations manuelles, par script, ou via des assistants. Il existe littéralement une pléthore de façons et de lieux pour installer Docker !
 
@@ -562,7 +584,7 @@ something like:
 Remember that you will have to log out and back in...
 ```
 
-1.  Il est recommandé de n'utiliser que des utilisateurs non-root lorsque vous travaillez avec Docker. Pour ce faire, vous devez ajouter vos utilisateurs non-root au groupe Unix local `docker` sur votre machine Linux. Les commandes ci-dessous montrent comment ajouter l'utilisateur `npoulton` au groupe `docker` et vérifier que l'opération a réussi. Vous devrez utiliser un compte utilisateur valide sur votre propre système.
+3.  Il est recommandé de n'utiliser que des utilisateurs non-root lorsque vous travaillez avec Docker. Pour ce faire, vous devez ajouter vos utilisateurs non-root au groupe Unix local `docker` sur votre machine Linux. Les commandes ci-dessous montrent comment ajouter l'utilisateur `npoulton` au groupe `docker` et vérifier que l'opération a réussi. Vous devrez utiliser un compte utilisateur valide sur votre propre système.
 
 ```shell
 $ sudo usermod -aG docker npoulton
@@ -702,7 +724,7 @@ Docker est maintenant installé et vous êtes prêt à commencer à utiliser des
 
 Dans ce chapitre, vous avez vu comment installer Docker sur Windows 10, Mac OS X, Linux et Windows Server 2016. Maintenant que vous savez comment installer Docker, vous êtes prêt à commencer à travailler avec les images et les conteneurs.
 
-## 4 : Vue d'ensemble
+## Chapitre 4 : Vue d'ensemble
 
 L'idée de ce chapitre est de vous donner une vue d'ensemble rapide de ce qu'est Docker avant de plonger plus en profondeur dans les chapitres suivants.
 
@@ -1104,9 +1126,10 @@ Dans ce chapitre, vous avez effectué les tâches suivantes liées aux opératio
 
 Cette vue d'ensemble devrait vous aider pour les chapitres à venir où nous approfondirons les images et les conteneurs.
 
-## PARTIE 2 : LES ASPECTS TECHNIQUES
+---
+# Deuxième Partie : Les Aspects Techniques
 
-### 5 : Le Moteur Docker
+## Chapitre 5 : Le Moteur Docker
 
 Dans ce chapitre, nous allons jeter un coup d'œil rapide sous le capot du Moteur Docker (*Docker Engine*).
 
@@ -1122,7 +1145,7 @@ Comme ce chapitre fait partie de la section technique du livre, nous allons empl
 
 Allons découvrir le Moteur Docker !
 
-#### Moteur Docker - Le TL;DR
+### Moteur Docker - Le TL;DR
 
 Le Moteur Docker est le logiciel principal qui exécute et gère les conteneurs. Nous l'appelons souvent simplement **Docker**, ou la **plateforme Docker**. Si vous connaissez un peu VMware, il peut être utile de le considérer comme l'équivalent d'ESXi dans le monde VMware.
 
@@ -1135,6 +1158,7 @@ Le Moteur Docker a une conception modulaire avec de nombreux composants intercha
 Au moment de la rédaction, les principaux composants qui constituent le Moteur Docker sont : le **client Docker**, le **démon Docker**, **containerd** et **runc**. Ensemble, ils créent et exécutent des conteneurs.
 
 La Figure 5.1 montre une vue de haut niveau.![Figure 5.1](https://github.com/user-attachments/assets/7210e8b1-1cc1-4c34-9be6-6ac98d02a4eb)<p align="center">Figure 5.1</p>
+
 ### Moteur Docker - L'analyse approfondie
 
 Lorsque Docker a été lancé pour la première fois, le Moteur Docker comportait deux composants majeurs :
@@ -1147,6 +1171,7 @@ Le démon Docker était un binaire monolithique. Il contenait tout le code pour 
 Le composant LXC fournissait au démon un accès aux briques de base fondamentales des conteneurs, telles que les espaces de noms du noyau (*kernel namespaces*) et les groupes de contrôle (*cgroups*).
 
 L'interaction entre le démon, LXC et le système d'exploitation est illustrée à la Figure 5.2.![Figure 5.2](https://github.com/user-attachments/assets/acebbdba-fc84-4f34-a7ec-6c5801a66cd9)<p align="center">Figure 5.2</p>
+
 #### Se débarrasser de LXC
 
 La dépendance à LXC a été un problème dès le début.
@@ -1172,6 +1197,7 @@ Docker, Inc. était conscient de ces défis et a entrepris un effort considérab
 Ce travail de décomposition et de refactorisation du Moteur Docker est un processus continu. Cependant, il a déjà vu tout le code d'exécution des conteneurs et du runtime de conteneur être entièrement retiré du démon et refactorisé en petits outils spécialisés.
 
 La Figure 5.3 montre une vue de haut niveau de l'architecture du Moteur Docker avec de brèves descriptions.![Figure 5.3](https://github.com/user-attachments/assets/a27d49ac-e60d-4163-84d7-96925a7895f1)<p align="center">Figure 5.3</p>
+
 #### L'influence de l'Open Container Initiative (OCI)
 
 Pendant que Docker, Inc. décomposait le démon et refactorisait le code, l'OCI était en train de définir deux standards liés aux conteneurs :
@@ -1240,6 +1266,7 @@ Malgré son nom, `containerd` ne peut pas réellement créer de conteneurs. Il u
 Voilà ! Le conteneur est maintenant démarré.
 
 La Figure 5.4 résume le processus.![Figure 5.4](https://github.com/user-attachments/assets/7cabf02a-afc0-4ab8-8de5-2a54729d8c31)<p align="center">Figure 5.4</p>
+
 #### Un énorme avantage de ce modèle
 
 Le fait d'avoir toute la logique et le code pour démarrer et gérer les conteneurs retirés du démon signifie que l'ensemble du runtime de conteneur est découplé du démon Docker. Nous appelons parfois cela les « conteneurs sans démon » (*daemonless containers*), et cela permet d'effectuer la maintenance et les mises à jour sur le démon Docker sans impacter les conteneurs en cours d'exécution !
@@ -1293,7 +1320,7 @@ Le travail de modularisation du Moteur Docker est en cours.
 
 ---
 
-### 6 : Les Images
+## Chapitre 6 : Les Images
 
 Dans ce chapitre, nous allons nous plonger dans les images Docker. L'objectif est de vous donner une solide compréhension de ce que sont les images Docker et comment effectuer les opérations de base. Dans un chapitre ultérieur, nous verrons comment construire de nouvelles images avec nos propres applications à l'intérieur (conteneuriser une application).
 
@@ -1305,7 +1332,7 @@ Nous diviserons ce chapitre en trois parties habituelles :
 
 Allons découvrir les images !
 
-#### Images Docker - Le TL;DR
+### Images Docker - Le TL;DR
 
 Si vous êtes un ancien administrateur de VM, vous pouvez considérer les images Docker comme des modèles de VM. Un modèle de VM est comme une VM arrêtée - une image Docker est comme un conteneur arrêté. Si vous êtes un développeur, vous pouvez les considérer comme similaires à des **classes**.
 
@@ -1315,9 +1342,10 @@ Les images sont composées de multiples **couches** (*layers*) qui sont empilée
 
 Félicitations ! Vous avez maintenant une petite idée de ce qu'est une image Docker :-D Il est maintenant temps de vous épater !
 
-#### Images Docker - L'analyse approfondie
+### Images Docker - L'analyse approfondie
 
 Nous avons déjà mentionné à plusieurs reprises que les images sont comme des conteneurs arrêtés (ou des classes si vous êtes un développeur). En fait, vous pouvez arrêter un conteneur et créer une nouvelle image à partir de celui-ci. Dans cette optique, les images sont considérées comme des constructions de **temps de construction** (*build-time*) alors que les conteneurs sont des constructions de **temps d'exécution** (*run-time*).![Figure 6.1](https://github.com/user-attachments/assets/6c1e7790-f348-4bc4-b3f5-a73b72e40e53)<p align="center">Figure 6.1</p>
+
 #### Images et conteneurs
 
 La Figure 6.1 montre une vue de haut niveau de la relation entre les images et les conteneurs. Nous utilisons les commandes `docker container run` et `docker service create` pour démarrer un ou plusieurs conteneurs à partir d'une seule image. Cependant, une fois que vous avez démarré un conteneur à partir d'une image, les deux constructions deviennent dépendantes l'une de l'autre et vous ne pouvez pas supprimer l'image tant que le dernier conteneur l'utilisant n'a pas été arrêté et détruit. Tenter de supprimer une image sans arrêter et détruire tous les conteneurs qui l'utilisent entraînera l'erreur suivante :
@@ -1346,7 +1374,7 @@ Les images basées sur Windows ont tendance à être plus grandes que les images
 
 Un hôte Docker fraîchement installé n'a aucune image dans son dépôt local.
 
-Le dépôt d'images local sur un hôte Docker basé sur Linux est généralement situé à `/var/lib/docker/<storage-driver>`. Sur les hôtes Docker basés sur Windows, c'est `C:\ProgramData\docker\windowsfilter`.
+Le dépôt d'images local sur un hôte Docker basé sur Linux est généralement situé à `/var/lib/docker/<storage-driver>`. Sur les hôtes Docker basés sur Windows, c'est `C:\ProgramData\docker\wi[...]
 
 Vous pouvez vérifier si votre hôte Docker a des images dans son dépôt local avec la commande suivante.
 
@@ -1792,7 +1820,9 @@ Nous avons terminé en examinant certaines des commandes les plus courantes util
 
 Dans le prochain chapitre, nous ferons un tour similaire des conteneurs - le cousin d'exécution des images.
 
-### 7 : Les Conteneurs
+---
+
+## Chapitre 7 : Les Conteneurs
 
 Maintenant que nous en savons un peu plus sur les images, il est temps de passer aux conteneurs. Comme il s'agit d'un livre sur Docker, nous parlerons spécifiquement des conteneurs Docker. Cependant, le projet Docker a travaillé d'arrache-pied pour implémenter les spécifications d'image et de conteneur publiées par l'Open Containers Initiative (OCI) sur https://www.opencontainers.org. Cela signifie qu'une partie de ce que vous apprendrez ici s'appliquera à d'autres runtimes de conteneurs conformes à l'OCI.
 
@@ -1804,7 +1834,7 @@ Nous diviserons ce chapitre en trois parties habituelles :
 
 Allons découvrir les conteneurs !
 
-#### Conteneurs Docker - Le TL;DR
+### Conteneurs Docker - Le TL;DR
 
 Un conteneur est l'instance d'exécution d'une image. De la même manière que nous pouvons démarrer une machine virtuelle (VM) à partir d'un modèle de machine virtuelle, nous démarrons un ou plusieurs conteneurs à partir d'une seule image. La grande différence entre une VM et un conteneur est que les conteneurs sont plus rapides et plus légers - au lieu d'exécuter un système d'exploitation complet comme une VM, les conteneurs partagent le SE/noyau avec l'hôte sur lequel ils s'exécutent.
 
@@ -1823,7 +1853,7 @@ Vous pouvez arrêter manuellement un conteneur avec la commande `docker containe
 
 Voilà pour le résumé rapide ! Entrons maintenant dans les détails...
 
-#### Conteneurs Docker - L'analyse approfondie
+### Conteneurs Docker - L'analyse approfondie
 
 Les premières choses que nous aborderons ici sont les différences fondamentales entre un conteneur et une VM. C'est principalement de la théorie à ce stade, mais c'est important. En cours de route, nous indiquerons où le modèle de conteneur a des avantages potentiels par rapport au modèle de VM.
 
@@ -2173,7 +2203,7 @@ Dans le prochain chapitre, nous verrons comment orchestrer des applications cont
 
 ---
 
-### 8 : Conteneuriser une Application
+## Chapitre 8 : Conteneuriser une Application
 
 Docker, c'est avant tout prendre des applications et les exécuter dans des conteneurs.
 
@@ -2189,7 +2219,7 @@ Nous diviserons ce chapitre en trois parties habituelles :
 
 Allons conteneuriser une application !
 
-#### Conteneuriser une App - Le TL;DR
+### Conteneuriser une App - Le TL;DR
 
 Les conteneurs, c'est une affaire d'applications ! En particulier, il s'agit de rendre les applications simples à construire (*build*), à distribuer (*ship*) et à exécuter (*run*).
 
@@ -2205,7 +2235,7 @@ Une fois que votre application est conteneurisée (transformée en image Docker)
 La Figure 8.1 montre le processus de construction, de distribution et d'exécution d'une application (désolé pour les couleurs sur le diagramme).
 *(Figure 8.1)*
 
-#### Conteneuriser une App - L'analyse approfondie
+### Conteneuriser une App - L'analyse approfondie
 
 Le reste de ce chapitre vous guidera à travers le processus de conteneurisation d'une simple application web Node.js basée sur Linux. Le processus est le même pour Windows, et les futures éditions du livre incluront un exemple Windows.
 
@@ -2218,7 +2248,7 @@ Nous accomplirons les étapes de haut niveau suivantes :
 - Regarder d'un peu plus près
 - Passer en production avec les *Multi-stage Builds*
 
-##### Obtenir le code de l'application
+#### Obtenir le code de l'application
 
 L'application utilisée dans cet exemple peut être clonée depuis GitHub :
 `https://github.com/nigelpoulton/psweb.git`
@@ -2248,7 +2278,7 @@ drwxr-xr-x 2 root root 4096 Sep 29 16:26 views
 
 Ce répertoire contient tout le code source de l'application, ainsi que des sous-répertoires pour les vues et les tests unitaires.
 
-##### Inspecter le Dockerfile
+#### Inspecter le Dockerfile
 
 Remarquez que le dépôt contient un fichier appelé `Dockerfile`. C'est le fichier qui décrit l'application et indique à Docker comment construire une image à partir de celle-ci.
 
@@ -2281,7 +2311,7 @@ Regardons cela plus en détail.
 *   `EXPOSE 8080` : L'application expose un service web sur le port TCP 8080, donc le Dockerfile documente cela. C'est une métadonnée.
 *   `ENTRYPOINT ["node", "./app.js"]` : Est utilisé pour définir l'application principale que l'image (conteneur) doit exécuter. C'est également une métadonnée.
 
-##### Conteneuriser l'app/construire l'image
+#### Conteneuriser l'app/construire l'image
 
 Maintenant que nous avons le code de l'application et le Dockerfile, construisons l'image !
 
@@ -2306,7 +2336,7 @@ web          latest   e33cdd8266d0   About a minute ago   55.6MB
 
 Félicitations, l'application est conteneurisée !
 
-##### Exécuter l'application
+#### Exécuter l'application
 
 La commande suivante démarrera un nouveau conteneur appelé `c1` basé sur l'image `web:latest` que nous venons de créer. Elle mappe le port 80 de l'hôte Docker au port 8080 à l'intérieur du conteneur.
 
@@ -2324,14 +2354,14 @@ ID         IMAGE       COMMAND          ... PORTS
 82...88    web:latest  "node ./app.js"  ... 0.0.0.0:80->8080/tcp
 ```
 
-##### Tester la connectivité
+#### Tester la connectivité
 
 Ouvrez un navigateur web et pointez-le vers le nom DNS ou l'adresse IP de l'hôte sur lequel le conteneur s'exécute. Vous verrez la page web illustrée à la Figure 8.6.
 *(Figure 8.6)*
 
 Félicitations, l'application est conteneurisée et en cours d'exécution !
 
-##### Regarder d'un peu plus près
+#### Regarder d'un peu plus près
 
 *   Les lignes de commentaires dans un Dockerfile commencent par le caractère `#`.
 *   Toutes les lignes non commentées sont des **Instructions**.
@@ -2339,7 +2369,7 @@ Félicitations, l'application est conteneurisée et en cours d'exécution !
 *   Vous pouvez voir les instructions qui ont été utilisées pour construire l'image avec la commande `docker image history`.
 *   Le processus de build de base est : démarrer un conteneur temporaire > exécuter l'instruction du Dockerfile à l'intérieur de ce conteneur > sauvegarder les résultats en tant que nouvelle couche d'image > supprimer le conteneur temporaire.
 
-##### Passer en production avec les *Multi-stage Builds*
+#### Passer en production avec les *Multi-stage Builds*
 
 En matière d'images Docker, **gros c'est mal** ! Gros signifie lent, difficile à manipuler et une grande surface d'attaque.
 
@@ -2443,7 +2473,7 @@ Mission accomplie !
 
 ---
 
-### 9 : Le Mode Swarm
+## Chapitre 9 : Le Mode Swarm
 
 Maintenant que nous savons comment installer Docker, télécharger des images et travailler avec des conteneurs, la prochaine chose dont nous avons besoin est un moyen de gérer tout cela à grande échelle. C'est là que l'orchestration et le mode Swarm entrent en jeu.
 
@@ -2461,7 +2491,7 @@ Nous diviserons ce chapitre en trois parties habituelles :
 
 Allons construire un swarm !
 
-#### Mode Swarm - Le TL;DR
+### Mode Swarm - Le TL;DR
 
 C'est une chose de suivre les exemples simples de ce livre, mais c'en est une tout autre d'exécuter des milliers de conteneurs sur des dizaines ou des centaines d'hôtes Docker ! C'est là que l'**orchestration** entre en jeu !
 
@@ -2471,22 +2501,22 @@ Pendant très longtemps, une telle orchestration était difficile. Des outils co
 
 Voilà l'explication rapide. Entrons maintenant dans les détails.
 
-#### Mode Swarm - L'analyse approfondie
+### Mode Swarm - L'analyse approfondie
 
 Tout d'abord, comme le suggère le titre du chapitre, nous allons nous concentrer sur le mode Swarm - les technologies natives de clustering et d'orchestration qui ont été livrées pour la première fois avec Docker 1.12. D'autres solutions d'orchestration existent, notamment Kubernetes, mais nous ne les couvrirons pas ici.
 
-##### Concepts et terminologie
+#### Concepts et terminologie
 
 Le mode Swarm a apporté une multitude de changements et d'améliorations à la façon dont nous gérons les conteneurs à grande échelle. Au cœur de ces changements se trouve le clustering natif des hôtes Docker, profondément intégré à la plateforme Docker.
 
 Les gens de Docker, Inc. n'aiment pas vraiment utiliser le terme *cluster*. Ils appellent un cluster d'hôtes Docker orchestrés un **swarm**, et les hôtes Docker participant à un swarm sont dits fonctionner en **mode Swarm**. Nous essaierons d'être cohérents et d'utiliser ces termes pour le reste du livre. Nous commencerons également à utiliser le terme **mode moteur unique** (*single-engine mode*) pour désigner les hôtes Docker qui ne fonctionnent pas en mode Swarm.
 *(Figure 9.1)*
 
-##### Rétrocompatibilité
+#### Rétrocompatibilité
 
 L'introduction du mode Swarm était extrêmement importante, mais le maintien de la rétrocompatibilité l'est tout autant ! Par conséquent, le mode Swarm est entièrement optionnel. Une installation standard de Docker fonctionnera par défaut en mode moteur unique, garantissant une compatibilité à 100% avec les versions précédentes de Docker.
 
-##### Introduction au mode Swarm
+#### Introduction au mode Swarm
 
 Un **swarm** se compose d'un ou plusieurs **nœuds**. Les nœuds sont configurés en tant que **managers** ou **workers**.
 *   Les **Managers** s'occupent de l'état du swarm et sont chargés de répartir les **tâches** aux workers.
@@ -2500,12 +2530,12 @@ La configuration et l'état du swarm sont conservés dans une base de données *
 
 Une autre chose qui change la donne avec le mode Swarm est son approche de la **sécurité**. Le **TLS** est si étroitement intégré qu'il n'est pas possible de construire un swarm sans lui. Il est utilisé pour chiffrer les communications, authentifier les nœuds et autoriser les rôles. La rotation automatique des clés est également incluse !
 
-##### Configuration du laboratoire
+#### Configuration du laboratoire
 
 Pour le reste de ce chapitre, nous allons construire le laboratoire montré dans la Figure 9.2 avec 6 nœuds configurés en 3 managers et 3 workers.
 *(Figure 9.2)*
 
-##### Activer le mode Swarm
+#### Activer le mode Swarm
 
 Exécuter `docker swarm init` sur un hôte Docker en mode moteur unique fera passer ce nœud en mode Swarm et créera un nouveau swarm. Il fera également de ce nœud le premier manager du Swarm.
 
@@ -2568,7 +2598,7 @@ Exécuter `docker swarm init` sur un hôte Docker en mode moteur unique fera pas
     ```
     Félicitations ! Vous venez de créer un swarm de 6 nœuds.
 
-##### Haute disponibilité (HA) des managers de Swarm
+#### Haute disponibilité (HA) des managers de Swarm
 
 Les managers de Swarm ont un support natif pour la haute disponibilité (HA). Cela signifie qu'un ou plusieurs peuvent tomber en panne et les survivants maintiendront le swarm en fonctionnement.
 
@@ -2581,7 +2611,7 @@ Swarm utilise une implémentation de l'algorithme de consensus **Raft** pour la 
 Avoir un nombre impair de managers augmente les chances d'atteindre le quorum et d'éviter un *split-brain*.
 *(Figure 9.4)*
 
-##### Services
+#### Services
 
 Les services sont la façon de déclarer l'état souhaité pour un service d'application et de le fournir à Docker. Nous créons un service avec la commande `docker service create`.
 
@@ -2602,7 +2632,7 @@ Le swarm exécute une **boucle de réconciliation** qui compare constamment l'é
 *   `docker service ps <nom-service>` pour voir une liste des tâches dans un service.
 *   `docker service inspect --pretty <nom-service>` pour des informations détaillées.
 
-##### Mettre à l'échelle un service
+#### Mettre à l'échelle un service
 
 Utilisez `docker service scale` pour mettre à l'échelle un service.
 
@@ -2613,7 +2643,7 @@ web-fe scaled to 10
 
 Le planificateur (*scheduler*) de Swarm essaie de répartir les tâches aussi équitablement que possible entre les nœuds.
 
-##### Supprimer un service
+#### Supprimer un service
 
 Utilisez `docker service rm` pour supprimer un service. Soyez prudent, car il supprime toutes les tâches sans demander de confirmation.
 
@@ -2621,7 +2651,7 @@ Utilisez `docker service rm` pour supprimer un service. Soyez prudent, car il su
 $ docker service rm web-fe
 ```
 
-##### Mises à jour progressives (*Rolling updates*)
+#### Mises à jour progressives (*Rolling updates*)
 
 Pour voir cela, nous allons déployer un nouveau service. Mais d'abord, nous allons créer un nouveau réseau **overlay**.
 
@@ -2657,7 +2687,7 @@ $ docker service update \
 
 Félicitations. Vous venez de pousser une mise à jour progressive vers une application conteneurisée en direct.
 
-##### Nettoyage
+#### Nettoyage
 
 Nettoyons notre service.
 
@@ -2666,7 +2696,7 @@ $ docker service rm uber-svc
 $ docker network rm uber-net
 ```
 
-#### Mode Swarm - Les commandes
+### Mode Swarm - Les commandes
 
 *   `docker swarm init` est la commande qui initialise un nouveau swarm et fait du nœud actuel le premier manager. Elle fait également passer le nœud en mode Swarm.
 *   `docker swarm join` est utilisé pour joindre un nœud à un swarm existant en tant que manager ou worker. Le jeton de jonction (*join token*) que vous utilisez détermine si le nœud rejoint en tant que manager ou worker.
@@ -2694,7 +2724,9 @@ Nous avons vu comment le mode Swarm gère la sécurité par défaut avec TLS, et
 
 Nous avons terminé en déployant un nouveau service et en effectuant une mise à jour progressive (*rolling update*) vers une nouvelle version de l'image.
 
-### 10 : La mise en réseau overlay de Docker
+---
+
+## Chapitre 10 : La mise en réseau overlay de Docker
 
 La mise en réseau des conteneurs est de plus en plus importante. Surtout dans les environnements de production.
 
@@ -2710,7 +2742,7 @@ Nous diviserons ce chapitre en trois parties habituelles :
 
 Allons faire un peu de magie réseau !
 
-#### La mise en réseau overlay de Docker - Le TL;DR
+### La mise en réseau overlay de Docker - Le TL;DR
 
 Dans le monde réel, il est vital que les conteneurs puissent communiquer entre eux de manière fiable et sécurisée, même lorsqu'ils se trouvent sur des hôtes différents sur des réseaux différents. C'est là que la mise en réseau overlay entre en jeu. Elle vous permet de créer un réseau plat et sécurisé de couche 2 s'étendant sur plusieurs hôtes, auquel les conteneurs peuvent se connecter. Les conteneurs sur ce réseau peuvent alors communiquer directement.
 
@@ -2718,7 +2750,7 @@ Docker offre une mise en réseau overlay native qui est simple à configurer et 
 
 En coulisses, la mise en réseau Docker est composée de `libnetwork` et de pilotes (*drivers*). `Libnetwork` est l'implémentation canonique du Container Network Model (CNM) et les pilotes sont des composants enfichables qui implémentent différentes technologies et topologies de réseau. Docker propose des pilotes natifs tels que le pilote `overlay`, et des tiers proposent également des pilotes.
 
-#### La mise en réseau overlay de Docker - L'analyse approfondie
+### La mise en réseau overlay de Docker - L'analyse approfondie
 
 En mars 2015, Docker, Inc. a acquis la startup de mise en réseau de conteneurs SocketPlane. Deux des raisons derrière cette acquisition étaient d'apporter une véritable mise en réseau à Docker, et de rendre la mise en réseau des conteneurs si simple que même les développeurs pourraient le faire :-P
 
@@ -2731,14 +2763,14 @@ Le reste de ce chapitre sera divisé en deux parties :
 *   **Partie 1 :** nous construirons et testerons un réseau overlay Docker en mode Swarm.
 *   **Partie 2 :** nous expliquerons la théorie derrière son fonctionnement.
 
-##### Construire et tester un réseau overlay Docker en mode Swarm
+#### Construire et tester un réseau overlay Docker en mode Swarm
 
 Pour les exemples suivants, nous utiliserons deux hôtes Docker sur deux réseaux de couche 2 distincts connectés par un routeur, comme le montre la Figure 10.1.
 *(Figure 10.1)*
 
 Vous pouvez suivre avec des hôtes Docker Linux ou Windows. Linux devrait avoir un noyau Linux 4.4 (plus récent est toujours mieux) et Windows devrait être Windows Server 2016 avec les derniers correctifs installés. Les exemples du livre ont été testés avec Docker 17.05 sur Linux et 17.03 sur Windows.
 
-**Construire un swarm**
+##### Construire un swarm
 
 La première chose que nous ferons est de configurer les deux hôtes en un Swarm à deux nœuds. Nous exécuterons la commande `docker swarm init` sur `node1` pour en faire un manager, puis nous exécuterons la commande `docker swarm join` sur `node2` pour en faire un worker.
 
@@ -2765,7 +2797,7 @@ This node joined a swarm as a worker.
 ```
 Nous avons maintenant un Swarm à deux nœuds où `node1` est un manager et `node2` est un worker.
 
-**Créer un nouveau réseau overlay**
+##### Créer un nouveau réseau overlay
 
 Maintenant, créons un nouveau réseau overlay appelé `uber-net`. Exécutez la commande suivante depuis `node1`. Pour que cela fonctionne sur Windows, vous devrez peut-être ajouter une règle pour le port 4789/udp sur vos hôtes Docker Windows.
 ```shell
@@ -2787,7 +2819,7 @@ c740ydi1lm89        uber-net            overlay             swarm
 ```
 Le réseau que nous avons créé est en bas de la liste. Si vous exécutez `docker network ls` sur `node2`, vous remarquerez qu'il ne peut pas voir le réseau `uber-net`. C'est parce que les nouveaux réseaux overlay ne sont rendus disponibles aux nœuds workers que lorsqu'ils exécutent des conteneurs attachés à cet overlay.
 
-**Attacher un service au réseau overlay**
+##### Attacher un service au réseau overlay
 
 Créons un nouveau service Docker et attachons-le au réseau `uber-net`. Nous créerons le service avec deux répliques pour qu'une s'exécute sur `node1` et l'autre sur `node2`.
 
@@ -2815,7 +2847,7 @@ ID                  NAME                IMAGE               NODE                
 Félicitations ! Vous avez créé un nouveau réseau overlay s'étendant sur deux nœuds sur des réseaux sous-jacents distincts, et vous y avez planifié deux conteneurs.
 *(Figure 10.2)*
 
-**Tester le réseau overlay**
+##### Tester le réseau overlay
 
 Maintenant, testons le réseau overlay avec la commande `ping`. Pour ce faire, nous devons trouver l'adresse IP de chaque conteneur.
 
@@ -2864,9 +2896,9 @@ Reply from 10.0.0.4: bytes=32 time=1ms TTL=128
 ```
 Comme montré ci-dessus, le conteneur sur `node1` peut pinguer le conteneur sur `node2` en utilisant le réseau overlay.
 
-##### La théorie derrière tout ça
+#### La théorie derrière tout ça
 
-**Introduction à VXLAN**
+##### Introduction à VXLAN
 
 Avant tout, la mise en réseau overlay de Docker utilise des **tunnels VXLAN** pour créer des réseaux overlay virtuels de couche 2. Au plus haut niveau, les VXLAN vous permettent de créer un réseau virtuel de couche 2 par-dessus une infrastructure de couche 3 existante.
 *(Figure 10.4)*
@@ -2874,7 +2906,7 @@ Avant tout, la mise en réseau overlay de Docker utilise des **tunnels VXLAN** p
 Pour créer le réseau overlay, un tunnel VXLAN est créé à travers l'infrastructure IP de couche 3 sous-jacente (*underlay network*). Chaque extrémité du tunnel VXLAN est terminée par un **VTEP** (VXLAN Tunnel Endpoint). C'est ce VTEP qui effectue l'encapsulation/décapsulation.
 *(Figure 10.5)*
 
-**Explication de notre exemple à deux conteneurs**
+##### Explication de notre exemple à deux conteneurs
 
 Pour accomplir cela, un nouvel **espace de noms réseau** (*network namespace*) a été créé sur chaque hôte. Un commutateur virtuel (`Br0`) est créé à l'intérieur de l'espace de noms réseau. Un VTEP est également créé avec une extrémité connectée au commutateur `Br0` et l'autre connectée à la pile réseau de l'hôte, obtenant une adresse IP sur le réseau sous-jacent. Les deux VTEP sur chaque hôte créent l'overlay via un tunnel VXLAN.
 *(Figure 10.6)*
@@ -2882,7 +2914,7 @@ Pour accomplir cela, un nouvel **espace de noms réseau** (*network namespace*) 
 Chaque conteneur obtient ensuite sa propre interface Ethernet virtuelle (`veth`) qui est également connectée au commutateur `Br0` local. La topologie ressemble maintenant à la Figure 10.7.
 *(Figure 10.7)*
 
-**Exemple de communication**
+##### Exemple de communication
 
 Lorsque le conteneur C1 (sur `node1`) pingue C2 (sur `node2`), le paquet est envoyé au commutateur `Br0`. Le commutateur apprend où envoyer le paquet grâce à une réponse ARP proxy du VTEP. Le VTEP sait où se trouve C2 car les détails réseau de tous les nouveaux conteneurs sont propagés aux autres nœuds du swarm en utilisant le protocole de bavardage (*gossip protocol*) intégré au réseau.
 
@@ -2891,7 +2923,7 @@ Le VTEP encapsule la trame Ethernet dans un paquet IP/UDP. L'en-tête VXLAN cont
 
 C'est ainsi que la technologie VXLAN est exploitée par les réseaux overlay natifs de Docker.
 
-#### La mise en réseau overlay de Docker - Les commandes
+### La mise en réseau overlay de Docker - Les commandes
 
 *   `docker network create` est la commande que nous utilisons pour créer un nouveau réseau de conteneurs. L'option `-d` vous permet de spécifier le pilote à utiliser, le plus courant étant le pilote `overlay`. Le plan de contrôle est chiffré par défaut. Pour chiffrer le plan de données, ajoutez simplement l'option `-o encrypted`.
 *   `docker network ls` liste tous les réseaux de conteneurs visibles par un hôte Docker.
@@ -2902,7 +2934,9 @@ C'est ainsi que la technologie VXLAN est exploitée par les réseaux overlay nat
 
 Dans ce chapitre, nous avons vu la simplicité de la création de nouveaux réseaux overlay Docker en utilisant la commande `docker network create`. Nous avons ensuite appris comment ils sont créés en coulisses en utilisant la technologie VXLAN. Cela n'effleure que la surface de ce que vous pouvez faire avec la mise en réseau overlay native de Docker.
 
-### 11 : La sécurité dans Docker
+---
+
+## Chapitre 11 : La sécurité dans Docker
 
 Une bonne sécurité est une question de couches, et Docker a beaucoup de couches. Il prend en charge toutes les principales technologies de sécurité Linux, en plus d'avoir beaucoup des siennes - et la plupart d'entre elles sont simples et faciles à configurer.
 
@@ -2914,7 +2948,7 @@ Lorsque nous arriverons à la partie d'analyse approfondie du chapitre, nous div
 
 > **Note :** De grandes parties de ce chapitre sont spécifiques à Linux. Cependant, la section sur les technologies de sécurité de la plateforme Docker est indépendante de la plateforme et s'applique également à Linux et à Windows.
 
-#### La sécurité dans Docker - Le TL;DR
+### La sécurité dans Docker - Le TL;DR
 
 La sécurité est une question de couches ! Plus vous avez de couches de sécurité, plus vous êtes en sécurité. Eh bien... Docker offre beaucoup de couches de sécurité. La Figure 11.1 montre certaines des technologies de sécurité que nous aborderons dans le chapitre.
 *(Figure 11.1)*
@@ -2929,8 +2963,7 @@ La plateforme Docker elle-même offre d'excellentes technologies de sécurité n
 *   Les **secrets Docker** font des secrets des citoyens de première classe dans l'écosystème Docker. Ils sont stockés dans le magasin de cluster chiffré, chiffrés en transit lorsqu'ils sont livrés aux conteneurs, et stockés dans des systèmes de fichiers en mémoire lorsqu'ils sont utilisés.
 
 L'important à savoir est que Docker fonctionne avec les principales technologies de sécurité Linux tout en fournissant son propre ensemble étendu et croissant de technologies de sécurité. Bien que les technologies de sécurité Linux puissent être un peu compliquées à configurer, les technologies de sécurité de la plateforme Docker sont très simples.
-
-#### La sécurité dans Docker - L'analyse approfondie
+### La sécurité dans Docker - L'analyse approfondie
 
 Nous savons tous que la sécurité est importante. Nous savons aussi que la sécurité peut être compliquée et ennuyeuse !
 
@@ -2949,11 +2982,11 @@ Nous organiserons le reste de ce chapitre comme suit :
     *   Docker Content Trust
     *   Secrets Docker
 
-##### Technologies de sécurité Linux
+#### Technologies de sécurité Linux
 
 Toutes les bonnes plateformes de conteneurs devraient utiliser les espaces de noms et les cgroups pour construire des conteneurs. Les meilleures plateformes de conteneurs s'intégreront également avec d'autres technologies de sécurité Linux telles que les capacités, les systèmes de Contrôle d'Accès Obligatoire comme SELinux et AppArmor, et seccomp. Comme prévu, Docker s'intègre avec toutes !
 
-**Espaces de noms (Namespaces)**
+##### Espaces de noms (Namespaces)
 
 Les espaces de noms du noyau sont au cœur même des conteneurs ! Ils nous permettent de découper un système d'exploitation (SE) pour qu'il ait l'apparence et la convivialité de plusieurs systèmes d'exploitation isolés.
 
@@ -2968,27 +3001,27 @@ Docker sur Linux utilise actuellement les espaces de noms de noyau suivants :
 *   **User (user)** : Permet de mapper les utilisateurs à l'intérieur d'un conteneur à des utilisateurs différents sur l'hôte Linux.
 *   **UTS (uts)** : Fournit à chaque conteneur son propre nom d'hôte.
 
-**Groupes de Contrôle (Control Groups)**
+##### Groupes de Contrôle (Control Groups)
 
 Si les espaces de noms concernent l'isolation, les groupes de contrôle (cgroups) concernent la fixation de limites. Les conteneurs sont isolés les uns des autres mais partagent tous un ensemble commun de ressources du SE - comme le CPU, la RAM et les E/S disque. Les cgroups nous permettent de fixer des limites sur chacun d'eux afin qu'un seul conteneur ne puisse pas utiliser toutes les ressources de l'hôte Linux.
 
-**Capacités (Capabilities)**
+##### Capacités (Capabilities)
 
 Il est déconseillé d'exécuter des conteneurs en tant que `root`. Ce dont nous avons besoin, c'est d'une technologie qui nous permette de choisir les pouvoirs de `root` dont nos conteneurs ont besoin pour fonctionner. Entrez les **capacités** !
 
 Le compte `root` de Linux est composé d'une longue liste de capacités. Docker travaille avec les capacités pour que vous puissiez exécuter des conteneurs en tant que `root`, mais en supprimant les capacités de `root` dont vous n'avez pas besoin. Par exemple, si le seul privilège `root` dont votre conteneur a besoin est la capacité de se lier à des ports réseau de bas numéro, vous devriez démarrer un conteneur en supprimant toutes les capacités de `root`, puis en rajoutant la capacité `CAP_NET_BIND_SERVICE`.
 
-**Systèmes de Contrôle d'Accès Obligatoire (MAC)**
+##### Systèmes de Contrôle d'Accès Obligatoire (MAC)
 
 Docker fonctionne avec les principales technologies MAC de Linux telles qu'AppArmor et SELinux. Selon votre distribution Linux, Docker applique un profil AppArmor par défaut à tous les nouveaux conteneurs.
 
-**seccomp**
+##### seccomp
 
 Docker utilise `seccomp`, en mode filtre, pour limiter les appels système (*syscalls*) qu'un conteneur peut faire au noyau de l'hôte. Tous les nouveaux conteneurs obtiennent un profil `seccomp` par défaut configuré avec des valeurs judicieuses.
 
-##### Technologies de sécurité de la plateforme Docker
+#### Technologies de sécurité de la plateforme Docker
 
-**Sécurité en Mode Swarm**
+##### Sécurité en Mode Swarm
 
 Le Mode Swarm inclut de nombreuses fonctionnalités de sécurité activées par défaut. Celles-ci incluent :
 *   ID de nœud cryptographiques
@@ -3012,12 +3045,12 @@ Le Mode Swarm inclut de nombreuses fonctionnalités de sécurité activées par 
 *   **Configuration de l'AC :** Vous pouvez configurer la période de rotation des certificats avec `docker swarm update --cert-expiry ...`.
 *   **Magasin de cluster (Cluster store) :** C'est le cerveau d'un Swarm, où la configuration et l'état sont stockés. Il est basé sur une implémentation d'etcd, répliqué sur tous les managers et chiffré par défaut.
 
-**Détection des vulnérabilités avec Docker Security Scanning**
+##### Détection des vulnérabilités avec Docker Security Scanning
 
 Docker Security Scanning effectue des analyses au niveau binaire des images Docker et vérifie les logiciels qu'elles contiennent par rapport à des bases de données de vulnérabilités connues (bases de données CVE). Un rapport détaillé est ensuite disponible. C'est disponible pour les dépôts privés sur Docker Hub et dans le cadre de Docker Enterprise Edition. Toutes les images officielles de Docker sont scannées.
 *(Figures 11.11 et 11.12 montrant les rapports de scan sur Docker Hub)*
 
-**Signature et vérification des images avec Docker Content Trust**
+##### Signature et vérification des images avec Docker Content Trust
 
 Docker Content Trust (DCT) permet de vérifier facilement l'intégrité et l'éditeur des images que vous téléchargez. À un niveau élevé, DCT permet aux développeurs de signer leurs images lorsqu'elles sont poussées vers Docker Hub ou Docker Trusted Registry. Il vérifiera également automatiquement les images lorsqu'elles sont téléchargées.
 *(Figure 11.13)*
@@ -3029,7 +3062,7 @@ Une fois DCT activé, vous ne pourrez plus télécharger et travailler avec des 
 ![image59](https://github.com/user-attachments/assets/49d7eb8e-0801-4919-884c-5cd382149ad2)<p align="center">Figures 11.16</p>
 ![image60](https://github.com/user-attachments/assets/b4e26eb6-3727-4989-b574-6da855124f5e)<p align="center">Figures 11.17</p>
 
-**Secrets Docker**
+##### Secrets Docker
 
 Avant Docker 1.13, il n'y avait pas de moyen standard de rendre les secrets (mots de passe, certificats TLS, etc.) disponibles pour les applications de manière sécurisée.
 
